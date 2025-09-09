@@ -88,7 +88,7 @@ def start_step1_collection():
             "query": query,
             "context": context,
             "timestamp": datetime.now().isoformat()
-        }, categoria="workflow")
+        }, categoria="workflow", session_id=session_id)
 
         # Executa coleta massiva em thread separada
         def execute_collection():
@@ -132,7 +132,7 @@ def start_step1_collection():
                         "session_id": session_id,
                         "viral_results": viral_results,
                         "timestamp": datetime.now().isoformat()
-                    }, categoria="workflow")
+                    }, categoria="workflow", session_id=session_id)
 
                     # SEGUNDA ETAPA: Busca massiva real
                     logger.info(f"🌐 Executando busca massiva para: {query}")
@@ -173,7 +173,7 @@ def start_step1_collection():
                     "viral_results": viral_results,
                     "collection_report_generated": True,
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
                 logger.info(f"✅ ETAPA 1 CONCLUÍDA - Sessão: {session_id}")
 
@@ -183,7 +183,7 @@ def start_step1_collection():
                     "session_id": session_id,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
         # Inicia execução em background
         import threading
@@ -224,7 +224,7 @@ def start_step2_synthesis():
         salvar_etapa("etapa2_iniciada", {
             "session_id": session_id,
             "timestamp": datetime.now().isoformat()
-        }, categoria="workflow")
+        }, categoria="workflow", session_id=session_id)
 
         # Executa síntese em thread separada
         def execute_synthesis():
@@ -261,7 +261,7 @@ def start_step2_synthesis():
                     "behavioral_result": behavioral_result,
                     "market_result": market_result,
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
                 logger.info(f"✅ ETAPA 2 CONCLUÍDA - Sessão: {session_id}")
 
@@ -271,7 +271,7 @@ def start_step2_synthesis():
                     "session_id": session_id,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
         # Inicia execução em background
         import threading
@@ -311,28 +311,52 @@ def start_step3_generation():
         salvar_etapa("etapa3_iniciada", {
             "session_id": session_id,
             "timestamp": datetime.now().isoformat()
-        }, categoria="workflow")
+        }, categoria="workflow", session_id=session_id)
 
         # Executa geração em thread separada
         def execute_generation():
             try:
-                # Carrega dados das etapas anteriores
+                # Carrega dados das etapas anteriores com validação robusta
                 session_data = _load_session_data(session_id)
+                
+                # Validação crítica dos dados
                 if not session_data:
-                    logger.warning("⚠️ Dados das etapas anteriores não encontrados, usando dados padrão")
-                    session_data = {
-                        'search_results': {},
-                        'context': {
-                            'session_id': session_id,
-                            'segmento': 'Análise Geral',
-                            'produto': 'Produto/Serviço',
-                            'publico': 'Público-alvo geral'
-                        }
+                    logger.error("❌ ERRO CRÍTICO: Dados das etapas anteriores não encontrados")
+                    logger.error("❌ As etapas 1 e 2 devem ser concluídas antes da etapa 3")
+                    raise Exception("Dados das etapas anteriores não encontrados. Execute as etapas 1 e 2 primeiro.")
+                
+                # Verifica se os dados essenciais estão presentes
+                search_results = session_data.get('search_results', {})
+                logger.info(f"🔍 DEBUG: search_results type: {type(search_results)}, length: {len(str(search_results))}")
+                logger.info(f"🔍 DEBUG: session_data keys: {list(session_data.keys())}")
+                
+                # Validação mais flexível - aceita se há qualquer dado de pesquisa
+                if not search_results and not session_data.get('viral_results') and not session_data.get('viral_analysis'):
+                    logger.error("❌ ERRO CRÍTICO: Nenhum dado de pesquisa encontrado da etapa 1")
+                    raise Exception("Dados de pesquisa da etapa 1 não encontrados. Execute a etapa 1 novamente.")
+                
+                # Se search_results está vazio mas temos outros dados, usa eles
+                if not search_results:
+                    search_results = {
+                        'viral_results': session_data.get('viral_results', {}),
+                        'viral_analysis': session_data.get('viral_analysis', {}),
+                        'collection_report_generated': session_data.get('collection_report_generated', False)
+                    }
+                    logger.info("✅ Usando dados alternativos da etapa 1 (viral_results + viral_analysis)")
+                
+                context = session_data.get('context', {})
+                if not context or not context.get('session_id'):
+                    logger.warning("⚠️ Contexto incompleto, usando dados padrão")
+                    context = {
+                        'session_id': session_id,
+                        'segmento': 'Análise Geral',
+                        'produto': 'Produto/Serviço',
+                        'publico': 'Público-alvo geral'
                     }
                 
                 # Extrai dados necessários
-                massive_data = session_data.get('search_results', {})
-                context = session_data.get('context', {})
+                massive_data = search_results
+                logger.info(f"✅ Dados carregados: {len(str(massive_data))} chars de dados massivos")
                 
                 # Gera todos os 16 módulos
                 loop = asyncio.new_event_loop()
@@ -356,7 +380,7 @@ def start_step3_generation():
                     "modules_result": modules_result,
                     "final_report": final_report,
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
                 logger.info(f"✅ ETAPA 3 CONCLUÍDA - Sessão: {session_id}")
                 logger.info(f"📊 {modules_result.get('successful_modules', 0)}/16 módulos gerados")
@@ -367,7 +391,7 @@ def start_step3_generation():
                     "session_id": session_id,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
         # Inicia execução em background
         import threading
@@ -502,7 +526,7 @@ def execute_complete_workflow():
                     "modules_result": modules_result,
                     "final_report": final_report,
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
                 logger.info(f"✅ WORKFLOW COMPLETO CONCLUÍDO - Sessão: {session_id}")
 
@@ -512,7 +536,7 @@ def execute_complete_workflow():
                     "session_id": session_id,
                     "error": str(e),
                     "timestamp": datetime.now().isoformat()
-                }, categoria="workflow")
+                }, categoria="workflow", session_id=session_id)
 
         # Inicia execução em background
         import threading
@@ -579,9 +603,9 @@ def get_workflow_status(session_id):
 
         # Verifica se há erros
         error_files = [
-            f"relatorios_intermediarios/workflow/etapa1_erro*{session_id}*",
-            f"relatorios_intermediarios/workflow/etapa2_erro*{session_id}*",
-            f"relatorios_intermediarios/workflow/etapa3_erro*{session_id}*"
+            f"analyses_data/{session_id}/etapa1_erro*.json",
+            f"analyses_data/{session_id}/etapa2_erro*.json",
+            f"analyses_data/{session_id}/etapa3_erro*.json"
         ]
 
         for pattern in error_files:
@@ -1090,23 +1114,36 @@ def _save_collection_report(report_content: str, session_id: str):
 def _load_session_data(session_id: str) -> Dict[str, Any]:
     """Carrega dados salvos das etapas anteriores"""
     try:
-        # Tenta carregar dados da etapa 1 concluída com padrão correto
-        etapa1_pattern = f"relatorios_intermediarios/workflow/etapa1_concluida_*{session_id}*.json"
+        # Tenta carregar dados da etapa 1 concluída da pasta analyses_data
+        etapa1_pattern = f"analyses_data/{session_id}/etapa1_concluida_*.json"
         etapa1_files = glob.glob(etapa1_pattern)
         
         if not etapa1_files:
             logger.warning(f"⚠️ Nenhum arquivo de etapa 1 encontrado para sessão {session_id} com o padrão '{etapa1_pattern}'")
             
-            # Tenta padrão alternativo sem session_id específico
-            etapa1_files = glob.glob("relatorios_intermediarios/workflow/etapa1_concluida_*.json")
+            # Tenta padrão alternativo no diretório geral
+            etapa1_files = glob.glob("analyses_data/*/etapa1_concluida_*.json")
             if etapa1_files:
                 # Filtra por session_id no conteúdo
                 for file_path in etapa1_files:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
                             data = json.load(f)
-                            if data.get('session_id') == session_id:
+                            
+                            # Verifica session_id tanto no nível raiz quanto dentro de 'data'
+                            session_id_match = (
+                                data.get('session_id') == session_id or
+                                (data.get('data', {}).get('session_id') == session_id)
+                            )
+                            
+                            if session_id_match:
                                 logger.info(f"✅ Dados da etapa 1 encontrados em {file_path}")
+                                
+                                # Se os dados estão dentro de uma estrutura 'data', extrai eles
+                                if 'data' in data and isinstance(data['data'], dict):
+                                    logger.info("🔧 Extraindo dados da estrutura 'data'")
+                                    return data['data']
+                                
                                 return data
                     except (json.JSONDecodeError, FileNotFoundError):
                         continue
@@ -1121,6 +1158,12 @@ def _load_session_data(session_id: str) -> Dict[str, Any]:
                 with open(latest_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     logger.info(f"✅ Dados da etapa 1 carregados de {latest_file}")
+                    
+                    # Se os dados estão dentro de uma estrutura 'data', extrai eles
+                    if 'data' in data and isinstance(data['data'], dict):
+                        logger.info("🔧 Extraindo dados da estrutura 'data'")
+                        return data['data']
+                    
                     return data
             except json.JSONDecodeError as e:
                 logger.error(f"❌ Erro ao decodificar JSON de {latest_file}: {e}")
