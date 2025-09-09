@@ -1343,6 +1343,13 @@ RETORNE JSON com posicionamento COMPLETO:
             logger.error(f"❌ Erro no posicionamento: {e}")
             return self._create_emergency_posicionamento(context)
 
+    def process_all_modules(self, massive_data: Dict[str, Any], context: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+        """
+        MÉTODO DE COMPATIBILIDADE: Chama o método correto para evitar erro de atributo
+        """
+        logger.info("🔄 Chamando process_all_modules_from_massive_data via método de compatibilidade")
+        return self.process_all_modules_from_massive_data(massive_data, context, session_id)
+
     def execute_modular_generation(self, session_id: str, topic: str) -> Dict[str, Any]:
         """
         NOVO MÉTODO: Executa geração modular completa da Etapa 3

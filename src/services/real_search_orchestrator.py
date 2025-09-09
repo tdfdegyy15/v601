@@ -262,8 +262,8 @@ class RealSearchOrchestrator:
                 logger.warning("⚠️ Alibaba WebSailor não está habilitado")
                 return {'success': False, 'error': 'Alibaba WebSailor não habilitado'}
 
-            # Executa a pesquisa profunda - CORRIGIDO: chamando o método correto
-            research_result = await alibaba_websailor.navigate_and_research_deep(
+            # Executa a pesquisa profunda - CORRIGIDO: método síncrono, removendo await
+            research_result = alibaba_websailor.navigate_and_research_deep(
                 query=query,
                 context=context,
                 max_pages=30,

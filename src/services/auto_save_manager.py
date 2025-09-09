@@ -53,6 +53,7 @@ class AutoSaveManager:
             f"{self.base_path}/pesquisa_web",
             f"{self.base_path}/logs",
             f"{self.base_path}/erros",
+            f"{self.base_path}/workflow",
             f"{self.analyses_path}/analyses",
             f"{self.analyses_path}/anti_objecao",
             f"{self.analyses_path}/avatars",
@@ -89,8 +90,10 @@ class AutoSaveManager:
             # Gera timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
 
-            # Define diretório base
-            if session_id:
+            # Define diretório base - workflow sempre vai para analyses_data
+            if categoria == "workflow" and session_id:
+                diretorio = f"{self.analyses_path}/{session_id}"
+            elif session_id:
                 diretorio = f"{self.base_path}/{categoria}/{session_id}"
             else:
                 diretorio = f"{self.base_path}/{categoria}"
