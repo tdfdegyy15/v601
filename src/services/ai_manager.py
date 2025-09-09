@@ -473,6 +473,29 @@ class AIManager:
         
         return response.choices[0].message.content
 
+    def generate_analysis(self, prompt: str, max_tokens: int = 8192, temperature: float = 0.7) -> str:
+        """Gera análise usando o melhor provedor disponível - método compatível com módulos"""
+        try:
+            # Executa de forma síncrona usando asyncio
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Se já há um loop rodando, cria uma nova task
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(asyncio.run, self.generate_text(prompt, max_tokens, temperature))
+                        return future.result(timeout=60)
+                else:
+                    return loop.run_until_complete(self.generate_text(prompt, max_tokens, temperature))
+            except RuntimeError:
+                # Se não há loop, cria um novo
+                return asyncio.run(self.generate_text(prompt, max_tokens, temperature))
+        except Exception as e:
+            logger.error(f"❌ Erro na geração de análise: {e}")
+            # Retorna resposta de fallback em caso de erro
+            return f"Análise não pôde ser gerada devido a erro técnico: {str(e)}"
+
     def get_status(self) -> Dict[str, Any]:
         """Retorna status dos provedores"""
         status = {
