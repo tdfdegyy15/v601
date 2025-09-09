@@ -107,6 +107,7 @@ def create_app():
     from routes.mcp import mcp_bp
     from routes.enhanced_workflow import enhanced_workflow_bp
     from routes.master_3_stage_execution import register_master_3_stage_routes
+    from routes.session_management import session_bp
 
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(enhanced_analysis_bp, url_prefix='/enhanced')
@@ -119,6 +120,7 @@ def create_app():
     app.register_blueprint(html_report_bp, url_prefix='/html_report')
     app.register_blueprint(mcp_bp, url_prefix='/mcp')
     app.register_blueprint(enhanced_workflow_bp, url_prefix='/api')
+    app.register_blueprint(session_bp, url_prefix='/api')
     
     # Registra rotas do sistema de 3 etapas
     register_master_3_stage_routes(app)

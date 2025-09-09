@@ -551,6 +551,181 @@
             .btn-group {
                 flex-direction: column;
             }
+            
+            .step-selector {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        /* Session Management Styles */
+        .session-management-section {
+            margin-bottom: 3rem;
+        }
+        
+        .session-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            height: 100%;
+        }
+        
+        .session-card .card-header {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+        }
+        
+        .session-card .card-header h5 {
+            margin: 0;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .sessions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .session-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .session-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .session-item.selected {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary-color);
+        }
+        
+        .session-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .session-id {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .session-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .session-status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+        
+        .session-status.completed {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary-color);
+        }
+        
+        .session-info {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .session-steps {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .step-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .step-indicator.completed {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .step-indicator.pending {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+        
+        .selected-session-info {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 60px;
+        }
+        
+        .step-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .step-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .step-btn.selected {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .step-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        .session-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .session-actions .btn {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -767,14 +942,72 @@
             </div>
         </div>
 
+        <!-- Session Management Section -->
+        <div class="session-management-section">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card session-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-save"></i> Sessões Salvas</h5>
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadSavedSessions()">
+                                <i class="fas fa-refresh"></i> Atualizar
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="savedSessionsList" class="sessions-list">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin"></i> Carregando sessões...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card session-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-cogs"></i> Controle de Execução</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="session-controls">
+                                <div class="mb-3">
+                                    <label class="form-label">Sessão Selecionada:</label>
+                                    <div id="selectedSessionInfo" class="selected-session-info">
+                                        <span class="text-muted">Nenhuma sessão selecionada</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Continuar a partir da etapa:</label>
+                                    <div class="step-selector">
+                                        <button class="btn btn-outline-primary step-btn" data-step="1" onclick="selectStep(1)">
+                                            <i class="fas fa-search"></i> Etapa 1
+                                        </button>
+                                        <button class="btn btn-outline-primary step-btn" data-step="2" onclick="selectStep(2)" disabled>
+                                            <i class="fas fa-chart-line"></i> Etapa 2
+                                        </button>
+                                        <button class="btn btn-outline-primary step-btn" data-step="3" onclick="selectStep(3)" disabled>
+                                            <i class="fas fa-file-alt"></i> Etapa 3
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="action-buttons">
+                                    <button class="btn btn-success" id="continueBtn" onclick="continueFromStep()" disabled>
+                                        <i class="fas fa-play"></i> Continuar Execução
+                                    </button>
+                                    <button class="btn btn-warning" onclick="startNewSession()">
+                                        <i class="fas fa-plus"></i> Nova Sessão
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="btn-group">
-            <button class="btn btn-primary" id="startCompleteWorkflowBtn" onclick="startCompleteWorkflow()">
-                <i class="fas fa-play"></i>
-                <span>Executar Workflow Completo</span>
-                <div class="loading-spinner" style="display: none;"></div>
-            </button>
-            
             <button class="btn btn-secondary" onclick="resetWorkflow()">
                 <i class="fas fa-refresh"></i>
                 <span>Resetar</span>
@@ -816,11 +1049,14 @@
                 form.addEventListener('change', saveConfiguration);
             }
             
+            // Carrega sessões salvas ao inicializar
+            loadSavedSessions();
+            
             // Atalhos de teclado
             document.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.key === 'Enter') {
                     e.preventDefault();
-                    startCompleteWorkflow();
+                    // Removido: startCompleteWorkflow() - botão foi removido
                 }
             });
         }
@@ -938,53 +1174,294 @@
             }
         }
         
-        async function startCompleteWorkflow() {
+        // === FUNÇÕES DE GERENCIAMENTO DE SESSÕES ===
+        
+        let selectedSession = null;
+        let selectedStep = 1;
+        
+        // Função auxiliar para salvar estado da sessão
+        async function saveSessionState(sessionId, step, data, context = null) {
             try {
-                if (!validateForm()) {
-                    showNotification('Por favor, preencha pelo menos o segmento', 'warning');
-                    return;
-                }
-                
-                const formData = getFormData();
-                
-                showProgress(true);
-                updateProgress(0, 'Iniciando workflow completo...', 5);
-                
-                // Desabilita botão
-                const btn = document.getElementById('startCompleteWorkflowBtn');
-                btn.disabled = true;
-                btn.querySelector('.loading-spinner').style.display = 'inline-block';
-                
-                const response = await fetch('/api/workflow/complete', {
+                const response = await fetch('/api/sessions/save-state', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        step: step,
+                        data: data,
+                        context: context || getFormData()
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`✅ Estado da sessão ${sessionId} salvo para etapa ${step}`);
+                    // Atualiza lista de sessões
+                    loadSavedSessions();
+                } else {
+                    console.error('❌ Erro ao salvar estado:', result.error);
+                }
+            } catch (error) {
+                console.error('❌ Erro ao salvar estado da sessão:', error);
+            }
+        }
+        
+        async function loadSavedSessions() {
+            try {
+                const response = await fetch('/api/sessions/list');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displaySessions(result.sessions);
+                } else {
+                    showNotification('Erro ao carregar sessões: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar sessões:', error);
+                showNotification('Erro ao carregar sessões', 'error');
+            }
+        }
+        
+        function displaySessions(sessions) {
+            const container = document.getElementById('savedSessionsList');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox"></i>
+                        <p>Nenhuma sessão salva encontrada</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sessions.map(session => `
+                <div class="session-item" data-session-id="${session.session_id}" onclick="selectSession('${session.session_id}')">
+                    <div class="session-item-header">
+                        <span class="session-id">${session.display_name}</span>
+                        <span class="session-status ${session.status}">${session.status === 'active' ? 'Ativa' : 'Concluída'}</span>
+                    </div>
+                    <div class="session-info">
+                        <div><strong>Segmento:</strong> ${session.context.segmento}</div>
+                        <div><strong>Produto:</strong> ${session.context.produto}</div>
+                        <div><strong>Criada:</strong> ${new Date(session.created_at).toLocaleString('pt-BR')}</div>
+                    </div>
+                    <div class="session-steps">
+                        ${[1, 2, 3].map(step => `
+                            <div class="step-indicator ${session.completed_steps.includes(step) ? 'completed' : 'pending'}">
+                                ${step}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="session-actions">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSession('${session.session_id}', event)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function selectSession(sessionId) {
+            // Remove seleção anterior
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Adiciona seleção atual
+            const sessionItem = document.querySelector(`[data-session-id="${sessionId}"]`);
+            if (sessionItem) {
+                sessionItem.classList.add('selected');
+                selectedSession = sessionId;
+                
+                // Atualiza informações da sessão selecionada
+                updateSelectedSessionInfo(sessionId);
+                
+                // Habilita botões de etapa baseado no que pode continuar
+                updateStepButtons(sessionId);
+            }
+        }
+        
+        async function updateSelectedSessionInfo(sessionId) {
+            try {
+                const response = await fetch(`/api/sessions/load/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const session = result.session_data;
+                    const infoContainer = document.getElementById('selectedSessionInfo');
+                    
+                    infoContainer.innerHTML = `
+                        <div><strong>ID:</strong> ${sessionId.substring(0, 8)}...</div>
+                        <div><strong>Status:</strong> ${session.status === 'active' ? 'Ativa' : 'Concluída'}</div>
+                        <div><strong>Etapa Atual:</strong> ${session.current_step}</div>
+                        <div><strong>Etapas Concluídas:</strong> ${session.metadata.completed_steps.join(', ') || 'Nenhuma'}</div>
+                        <div><strong>Última Atualização:</strong> ${new Date(session.last_updated).toLocaleString('pt-BR')}</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar informações da sessão:', error);
+            }
+        }
+        
+        async function updateStepButtons(sessionId) {
+            const stepButtons = document.querySelectorAll('.step-btn');
+            
+            for (let step = 1; step <= 3; step++) {
+                const button = document.querySelector(`[data-step="${step}"]`);
+                
+                try {
+                    const response = await fetch(`/api/sessions/can-continue/${sessionId}/${step}`);
+                    const result = await response.json();
+                    
+                    if (result.success && result.can_continue) {
+                        button.disabled = false;
+                    } else {
+                        button.disabled = true;
+                    }
+                } catch (error) {
+                    button.disabled = true;
+                }
+            }
+        }
+        
+        function selectStep(step) {
+            if (!selectedSession) {
+                showNotification('Selecione uma sessão primeiro', 'warning');
+                return;
+            }
+            
+            // Remove seleção anterior
+            document.querySelectorAll('.step-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Adiciona seleção atual
+            const button = document.querySelector(`[data-step="${step}"]`);
+            if (button && !button.disabled) {
+                button.classList.add('selected');
+                selectedStep = step;
+                
+                // Habilita botão continuar
+                document.getElementById('continueBtn').disabled = false;
+            }
+        }
+        
+        async function continueFromStep() {
+            if (!selectedSession || !selectedStep) {
+                showNotification('Selecione uma sessão e uma etapa', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/continue/${selectedSession}/${selectedStep}`, {
+                    method: 'POST'
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    currentSessionId = result.session_id;
-                    showNotification('Workflow completo iniciado com sucesso!', 'success');
+                    showNotification(`Continuando da etapa ${selectedStep}...`, 'success');
                     
-                    // Monitora progresso completo
-                    monitorCompleteWorkflowProgress();
+                    // Carrega dados da sessão no formulário
+                    loadSessionDataToForm(result.context, result.previous_data);
+                    
+                    // Executa a etapa selecionada
+                    switch (selectedStep) {
+                        case 1:
+                            await startStep1();
+                            break;
+                        case 2:
+                            await startStep2();
+                            break;
+                        case 3:
+                            await startStep3();
+                            break;
+                    }
                 } else {
-                    throw new Error(result.error);
+                    showNotification('Erro: ' + result.error, 'error');
                 }
-                
             } catch (error) {
-                console.error('Erro no workflow completo:', error);
-                showNotification(`Erro no workflow: ${error.message}`, 'error');
-                
-                // Reabilita botão
-                const btn = document.getElementById('startCompleteWorkflowBtn');
+                console.error('Erro ao continuar execução:', error);
+                showNotification('Erro ao continuar execução', 'error');
+            }
+        }
+        
+        function loadSessionDataToForm(context, previousData) {
+            // Carrega dados do contexto no formulário
+            if (context.segmento) document.getElementById('segmento').value = context.segmento;
+            if (context.produto) document.getElementById('produto').value = context.produto;
+            if (context.publico) document.getElementById('publico').value = context.publico;
+            if (context.objetivo) document.getElementById('objetivo').value = context.objetivo;
+            if (context.tom) document.getElementById('tom').value = context.tom;
+            if (context.formato) document.getElementById('formato').value = context.formato;
+            
+            // Atualiza cards de etapas baseado nos dados anteriores
+            if (previousData.step_1) {
+                updateStepCard('step1Card', 'completed');
+                document.getElementById('step2Btn').disabled = false;
+            }
+            if (previousData.step_2) {
+                updateStepCard('step2Card', 'completed');
+                document.getElementById('step3Btn').disabled = false;
+            }
+        }
+        
+        async function startNewSession() {
+            if (!validateForm()) {
+                showNotification('Por favor, preencha pelo menos o segmento', 'warning');
+                return;
+            }
+            
+            // Limpa seleção atual
+            selectedSession = null;
+            selectedStep = 1;
+            
+            // Limpa interface
+            document.getElementById('selectedSessionInfo').innerHTML = '<span class="text-muted">Nova sessão será criada</span>';
+            document.querySelectorAll('.session-item').forEach(item => item.classList.remove('selected'));
+            document.querySelectorAll('.step-btn').forEach(btn => {
+                btn.classList.remove('selected');
                 btn.disabled = false;
-                btn.querySelector('.loading-spinner').style.display = 'none';
+            });
+            document.querySelector('[data-step="1"]').classList.add('selected');
+            document.getElementById('continueBtn').disabled = false;
+            
+            showNotification('Nova sessão preparada. Selecione uma etapa para começar.', 'info');
+        }
+        
+        async function deleteSession(sessionId, event) {
+            event.stopPropagation();
+            
+            if (!confirm('Tem certeza que deseja deletar esta sessão?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/delete/${sessionId}`, {
+                    method: 'DELETE'
+                });
                 
-                showProgress(false);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Sessão deletada com sucesso', 'success');
+                    loadSavedSessions(); // Recarrega lista
+                    
+                    // Limpa seleção se era a sessão selecionada
+                    if (selectedSession === sessionId) {
+                        selectedSession = null;
+                        document.getElementById('selectedSessionInfo').innerHTML = '<span class="text-muted">Nenhuma sessão selecionada</span>';
+                        document.getElementById('continueBtn').disabled = true;
+                    }
+                } else {
+                    showNotification('Erro ao deletar sessão: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao deletar sessão:', error);
+                showNotification('Erro ao deletar sessão', 'error');
             }
         }
         
@@ -1001,6 +1478,11 @@
                         
                         // Habilita próxima etapa
                         document.getElementById('step2Btn').disabled = false;
+                        
+                        // Salva estado da sessão
+                        if (currentSessionId && status.data) {
+                            await saveSessionState(currentSessionId, 1, status.data);
+                        }
                         
                         showNotification('Etapa 1 concluída! Dados coletados com sucesso.', 'success');
                         return;
@@ -1032,6 +1514,11 @@
                         // Habilita próxima etapa
                         document.getElementById('step3Btn').disabled = false;
                         
+                        // Salva estado da sessão
+                        if (currentSessionId && status.data) {
+                            await saveSessionState(currentSessionId, 2, status.data);
+                        }
+                        
                         showNotification('Etapa 2 concluída! Síntese com IA realizada.', 'success');
                         return;
                     }
@@ -1057,6 +1544,13 @@
                         updateProgress(3, 'Workflow concluído: 16 módulos gerados', 100);
                         updateStepCard('step3Card', 'completed');
                         updateStepIndicator(3, 'completed');
+                        
+                        // Salva estado da sessão e marca como concluída
+                        if (currentSessionId && status.data) {
+                            await saveSessionState(currentSessionId, 3, status.data);
+                            // Marca sessão como concluída
+                            await fetch(`/api/sessions/mark-completed/${currentSessionId}`, { method: 'POST' });
+                        }
                         
                         showNotification('Workflow concluído! 16 módulos gerados com sucesso.', 'success');
                         showResults();
@@ -1107,10 +1601,7 @@
                         showNotification('Workflow completo concluído com sucesso!', 'success');
                         showResults();
                         
-                        // Reabilita botão
-                        const btn = document.getElementById('startCompleteWorkflowBtn');
-                        btn.disabled = false;
-                        btn.querySelector('.loading-spinner').style.display = 'none';
+                        // Botão removido - não precisa reabilitar
                         
                         return;
                     }
@@ -1372,7 +1863,7 @@
                 // Reset buttons
                 document.getElementById('step2Btn').disabled = true;
                 document.getElementById('step3Btn').disabled = true;
-                document.getElementById('startCompleteWorkflowBtn').disabled = false;
+                // startCompleteWorkflowBtn removido
                 
                 showNotification('Workflow resetado', 'info');
             }
