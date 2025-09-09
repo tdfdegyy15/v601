@@ -105,55 +105,89 @@ def create_app():
     from routes.pdf_generator import pdf_bp
     from routes.html_report_generator import html_report_bp
     from routes.mcp import mcp_bp
-    from routes.enhanced_workflow import enhanced_workflow_bp
-    from routes.master_3_stage_execution import register_master_3_stage_routes
     from routes.session_management import session_bp
 
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(enhanced_analysis_bp, url_prefix='/enhanced')
     app.register_blueprint(forensic_bp, url_prefix='/forensic')
     app.register_blueprint(files_bp, url_prefix='/files')
-    app.register_blueprint(progress_bp, url_prefix='/api')
+    app.register_blueprint(progress_bp, url_prefix='/api/progress')
     app.register_blueprint(user_bp, url_prefix='/user')
     app.register_blueprint(monitoring_bp, url_prefix='/monitoring')
     app.register_blueprint(pdf_bp, url_prefix='/pdf')
     app.register_blueprint(html_report_bp, url_prefix='/html_report')
     app.register_blueprint(mcp_bp, url_prefix='/mcp')
-    app.register_blueprint(enhanced_workflow_bp, url_prefix='/api')
     app.register_blueprint(session_bp, url_prefix='/api')
-    
-    # Registra rotas do sistema de 3 etapas
-    register_master_3_stage_routes(app)
 
     @app.route('/')
     def index():
         """Página principal"""
-        return render_template('enhanced_interface_v3.html')
+        try:
+            return render_template('enhanced_interface_v3.html')
+        except Exception as e:
+            logger.error(f"❌ Erro ao carregar template: {e}")
+            return f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>ARQV30 Enhanced v3.0</title>
+                <meta charset="UTF-8">
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 40px; }}
+                    .container {{ max-width: 800px; margin: 0 auto; }}
+                    .error {{ color: #d32f2f; background: #ffebee; padding: 20px; border-radius: 8px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>ARQV30 Enhanced v3.0</h1>
+                    <div class="error">
+                        <h3>Template não encontrado</h3>
+                        <p>O template enhanced_interface_v3.html não foi encontrado.</p>
+                        <p>Sistema funcionando em modo básico.</p>
+                    </div>
+                    <h2>API Endpoints Disponíveis:</h2>
+                    <ul>
+                        <li><a href="/api/app_status">/api/app_status</a> - Status da aplicação</li>
+                        <li><a href="/monitoring/health">/monitoring/health</a> - Saúde do sistema</li>
+                        <li><a href="/enhanced/execute_analysis">/enhanced/execute_analysis</a> - Análise aprimorada</li>
+                    </ul>
+                </div>
+            </body>
+            </html>
+            """
 
     @app.route('/archaeological')
     def archaeological():
         """Interface arqueológica"""
-        return render_template('enhanced_interface.html')
+        try:
+            return render_template('enhanced_interface.html')
+        except:
+            return "Interface arqueológica não disponível"
 
     @app.route('/forensic')
     def forensic():
         """Interface forense"""
-        return render_template('forensic_interface.html')
+        try:
+            return render_template('forensic_interface.html')
+        except:
+            return "Interface forense não disponível"
 
     @app.route('/unified')
     def unified():
         """Interface unificada"""
-        return render_template('enhanced_interface_v3.html')
-    
-    @app.route('/test_3_stage')
-    def test_3_stage():
-        """Página de teste do sistema 3 etapas"""
-        return render_template('test_3_stage_system.html')
+        try:
+            return render_template('enhanced_interface_v3.html')
+        except:
+            return "Interface unificada não disponível"
     
     @app.route('/v3')
     def interface_v3():
         """Interface v3.0 aprimorada"""
-        return render_template('enhanced_interface_v3.html')
+        try:
+            return render_template('enhanced_interface_v3.html')
+        except:
+            return "Interface v3.0 não disponível"
 
     @app.route('/api/app_status')
     def app_status():
@@ -161,19 +195,15 @@ def create_app():
         try:
             # Status dos serviços principais
             services_status = {
-                'enhanced_ai_manager': True,
-                'real_search_orchestrator': True,
-                'viral_content_analyzer': True,
+                'ai_manager': ai_manager.is_available(),
                 'database': True,
-                'orchestrators': True
+                'file_system': True
             }
 
             # Verifica saúde dos componentes - tratamento seguro
             try:
                 from services.health_checker import health_checker
                 health_check = health_checker.get_overall_health()
-                if isinstance(health_check, str):
-                    health_check = {'status': health_check}
             except Exception as health_error:
                 health_check = {'status': 'error', 'message': str(health_error)}
 
@@ -184,11 +214,10 @@ def create_app():
                 'timestamp': datetime.now().isoformat(),
                 'version': 'ARQV30 Enhanced v3.0',
                 'features': {
-                    'real_data_only': True,
-                    'viral_content_capture': True,
-                    'ai_active_search': True,
-                    'api_rotation': True,
-                    'screenshot_capture': True
+                    'ai_analysis': ai_manager.is_available(),
+                    'data_collection': True,
+                    'module_processing': True,
+                    'report_generation': True
                 }
             }
 
@@ -225,16 +254,16 @@ def main():
 
         # Configurações do servidor
         host = os.getenv('HOST', '0.0.0.0')
-        port = int(os.getenv('PORT', 12000))
+        port = int(os.getenv('PORT', 5000))
         debug = os.getenv('FLASK_ENV', 'production') == 'development' # This line is kept for clarity in main, but app.config['DEBUG'] is set in create_app
 
         print(f"🌐 Servidor: http://{host}:{port}")
         print(f"🔧 Modo: {'Desenvolvimento' if debug else 'Produção'}")
         print(f"📊 Interface: Análise Ultra-Detalhada de Mercado")
-        print(f"🤖 IA: Gemini 2.0 Flash + OpenAI + Groq com Busca Ativa")
-        print(f"🔍 Pesquisa: Orquestrador Real + Rotação de APIs + Screenshots")
+        print(f"🤖 IA: Gemini + OpenAI + Groq")
+        print(f"🔍 Pesquisa: Sistema de coleta de dados")
         print(f"💾 Banco: Supabase + Arquivos Locais")
-        print(f"🛡️ Sistema: Ultra-Robusto v3.0 com Captura Visual")
+        print(f"🛡️ Sistema: ARQV30 Enhanced v3.0")
 
         print("\n" + "=" * 60)
         print("✅ ARQV30 Enhanced v3.0 PRONTO!")
@@ -243,13 +272,12 @@ def main():
         print("=" * 60)
 
         print("\n🔥 RECURSOS ATIVADOS:")
-        print("- IA com Ferramentas de Busca Ativa")
-        print("- Busca Massiva Real com Rotação de APIs")
-        print("- Captura Automática de Screenshots")
-        print("- Análise de Conteúdo Viral")
-        print("- 16 Módulos de Análise Especializados")
-        print("- Workflow em 3 Etapas Controladas")
-        print("- Zero Simulação - 100% Dados Reais")
+        print("- Sistema de IA Multi-Provedor")
+        print("- Coleta de Dados Massiva")
+        print("- Processamento de Módulos")
+        print("- Geração de Relatórios")
+        print("- Sistema de Monitoramento")
+        print("- Persistência de Sessões")
 
         # Inicia servidor
         app.run(

@@ -2,14 +2,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ARQV30 Enhanced v3.0 - AI Manager com Sistema de Ferramentas
-Gerenciador inteligente de múltiplas IAs com suporte a ferramentas e fallback automático
+ARQV30 Enhanced v3.0 - AI Manager Corrigido
+Gerenciador de IA com fallback robusto e tratamento de erros
 """
 
 import os
 import logging
 import time
 import json
+import asyncio
 from typing import Dict, List, Optional, Any, Union
 import requests
 from datetime import datetime, timedelta
@@ -22,35 +23,27 @@ except ImportError:
     HAS_GEMINI = False
 
 try:
-    import openai
+    from openai import OpenAI
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
 
 try:
-    from services.groq_client import groq_client
-    HAS_GROQ_CLIENT = True
+    from groq import Groq
+    HAS_GROQ = True
 except ImportError:
-    HAS_GROQ_CLIENT = False
-
-try:
-    from services.search_api_manager import search_api_manager
-    HAS_SEARCH_MANAGER = True
-except ImportError:
-    HAS_SEARCH_MANAGER = False
+    HAS_GROQ = False
 
 logger = logging.getLogger(__name__)
 
 class AIManager:
-    """Gerenciador de IA com fallback automático e suporte a ferramentas"""
+    """Gerenciador de IA com fallback automático corrigido"""
 
     def __init__(self):
         """Inicializa o gerenciador de IA"""
         self.providers = {}
         self.last_used_provider = None
         self.error_counts = {}
-        self.performance_metrics = {}
-        self.circuit_breaker = {}
         
         self._initialize_providers()
         logger.info(f"✅ AI Manager inicializado com {len(self.providers)} provedores")
@@ -59,74 +52,59 @@ class AIManager:
         """Inicializa todos os provedores de IA disponíveis"""
         
         # Inicializa Gemini
-        try:
-            if HAS_GEMINI:
-                api_key = os.getenv('GEMINI_API_KEY')
-                if api_key:
+        if HAS_GEMINI:
+            api_key = os.getenv('GEMINI_API_KEY')
+            if api_key:
+                try:
                     genai.configure(api_key=api_key)
                     self.providers['gemini'] = {
                         'client': genai,
                         'available': True,
                         'model': 'gemini-2.0-flash-exp',
                         'priority': 1,
-                        'error_count': 0,
-                        'consecutive_failures': 0,
-                        'max_errors': 5,
-                        'last_success': None,
-                        'supports_tools': True
+                        'error_count': 0
                     }
-                    logger.info("✅ Gemini 2.0 Flash inicializado.")
-                else:
-                    logger.info("ℹ️ GEMINI_API_KEY não configurada.")
+                    logger.info("✅ Gemini inicializado")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao inicializar Gemini: {e}")
             else:
-                logger.info("ℹ️ Biblioteca 'google-generativeai' não instalada.")
-        except Exception as e:
-            logger.warning(f"ℹ️ Gemini não disponível: {str(e)}")
+                logger.warning("⚠️ GEMINI_API_KEY não configurada")
 
         # Inicializa OpenAI
-        try:
-            if HAS_OPENAI:
-                api_key = os.getenv('OPENAI_API_KEY')
-                if api_key:
-                    openai.api_key = api_key
+        if HAS_OPENAI:
+            api_key = os.getenv('OPENAI_API_KEY')
+            if api_key:
+                try:
                     self.providers['openai'] = {
-                        'client': openai,
+                        'client': OpenAI(api_key=api_key),
                         'available': True,
-                        'model': 'gpt-4-0125-preview',
+                        'model': 'gpt-4o',
                         'priority': 2,
-                        'error_count': 0,
-                        'consecutive_failures': 0,
-                        'max_errors': 3,
-                        'last_success': None,
-                        'supports_tools': True
+                        'error_count': 0
                     }
-                    logger.info("✅ OpenAI GPT-4 inicializado.")
-                else:
-                    logger.info("ℹ️ OPENAI_API_KEY não configurada.")
+                    logger.info("✅ OpenAI inicializado")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao inicializar OpenAI: {e}")
             else:
-                logger.info("ℹ️ Biblioteca 'openai' não instalada.")
-        except Exception as e:
-            logger.warning(f"ℹ️ OpenAI não disponível: {str(e)}")
+                logger.warning("⚠️ OPENAI_API_KEY não configurada")
 
         # Inicializa Groq
-        try:
-            if HAS_GROQ_CLIENT and groq_client and groq_client.is_enabled():
-                self.providers['groq'] = {
-                    'client': groq_client,
-                    'available': True,
-                    'model': 'llama3-70b-8192',
-                    'priority': 3,
-                    'error_count': 0,
-                    'consecutive_failures': 0,
-                    'max_errors': 3,
-                    'last_success': None,
-                    'supports_tools': False
-                }
-                logger.info("✅ Groq (llama3-70b-8192) inicializado.")
+        if HAS_GROQ:
+            api_key = os.getenv('GROQ_API_KEY')
+            if api_key:
+                try:
+                    self.providers['groq'] = {
+                        'client': Groq(api_key=api_key),
+                        'available': True,
+                        'model': 'llama3-70b-8192',
+                        'priority': 3,
+                        'error_count': 0
+                    }
+                    logger.info("✅ Groq inicializado")
+                except Exception as e:
+                    logger.error(f"❌ Erro ao inicializar Groq: {e}")
             else:
-                logger.info("ℹ️ Groq não disponível ou não configurado.")
-        except Exception as e:
-            logger.warning(f"ℹ️ Groq não disponível: {str(e)}")
+                logger.warning("⚠️ GROQ_API_KEY não configurada")
 
     def _get_available_provider(self, require_tools: bool = False) -> Optional[str]:
         """Seleciona o melhor provedor disponível"""
@@ -135,13 +113,7 @@ class AIManager:
         for name, provider in self.providers.items():
             if not provider['available']:
                 continue
-                
-            if require_tools and not provider.get('supports_tools', False):
-                continue
-                
-            if provider['consecutive_failures'] >= provider['max_errors']:
-                continue
-                
+            
             available_providers.append((name, provider['priority']))
         
         if not available_providers:
@@ -151,236 +123,133 @@ class AIManager:
         available_providers.sort(key=lambda x: x[1])
         return available_providers[0][0]
 
-    async def google_search_tool(self, query: str) -> Dict[str, Any]:
-        """Ferramenta de busca Google para uso pela IA"""
-        try:
-            if not HAS_SEARCH_MANAGER:
-                return {'error': 'Search manager não disponível'}
-            
-            logger.info(f"🔍 IA solicitou busca: {query}")
-            results = await search_api_manager.interleaved_search(query)
-            
-            # Formata resultados para a IA
-            formatted_results = []
-            for result in results.get('all_results', []):
-                if result.get('success') and result.get('results'):
-                    for item in result['results'][:5]:  # Limita a 5 resultados por provedor
-                        if isinstance(item, dict):
-                            formatted_item = {
-                                'title': item.get('title', ''),
-                                'url': item.get('url') or item.get('link', ''),
-                                'snippet': item.get('snippet') or item.get('content', '')[:200]
-                            }
-                            if formatted_item['url']:
-                                formatted_results.append(formatted_item)
-            
-            return {
-                'query': query,
-                'results': formatted_results[:10],  # Máximo 10 resultados
-                'total_found': len(formatted_results)
-            }
-            
-        except Exception as e:
-            logger.error(f"❌ Erro na busca: {e}")
-            return {'error': f'Erro na busca: {str(e)}'}
-
-    def _get_google_search_function_definition(self) -> Dict[str, Any]:
-        """Definição da função de busca Google para Gemini"""
-        return {
-            "name": "google_search",
-            "description": "Busca informações atualizadas na internet usando múltiplos provedores de busca",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Termo de busca para encontrar informações relevantes"
-                    }
-                },
-                "required": ["query"]
-            }
-        }
-
-    async def generate_with_tools(self, prompt: str, context: str = "", tools: List[str] = None, max_iterations: int = 5) -> str:
-        """
-        Gera texto com suporte a ferramentas (function calling)
+    def generate_text(self, prompt: str, max_tokens: int = 4000, temperature: float = 0.7) -> str:
+        """Gera texto usando o melhor provedor disponível"""
+        provider_name = self._get_available_provider()
         
-        Args:
-            prompt: Prompt principal para a IA
-            context: Contexto adicional (dados coletados)
-            tools: Lista de ferramentas disponíveis ['google_search']
-            max_iterations: Máximo de iterações para evitar loops
-        """
-        if tools is None:
-            tools = ['google_search']
-        
-        # Verifica se há provedores com suporte a ferramentas
-        provider_name = self._get_available_provider(require_tools=True)
         if not provider_name:
-            logger.warning("⚠️ Nenhum provedor com suporte a ferramentas disponível, usando geração normal")
-            return await self.generate_text(prompt + "\n\n" + context)
+            raise Exception("Nenhum provedor de IA disponível")
         
         provider = self.providers[provider_name]
-        logger.info(f"🤖 Usando {provider_name} com ferramentas: {tools}")
         
-        # Prepara mensagens
-        full_prompt = f"{prompt}\n\nContexto disponível:\n{context}"
-        
-        # Loop de execução com ferramentas
-        iteration = 0
-        conversation_history = []
-        
-        while iteration < max_iterations:
-            iteration += 1
-            logger.info(f"🔄 Iteração {iteration}/{max_iterations}")
+        try:
+            if provider_name == 'gemini':
+                result = self._generate_gemini(prompt, max_tokens, temperature)
+            elif provider_name == 'openai':
+                result = self._generate_openai(prompt, max_tokens, temperature)
+            elif provider_name == 'groq':
+                result = self._generate_groq(prompt, max_tokens, temperature)
+            else:
+                raise Exception(f"Provedor {provider_name} não implementado")
             
-            try:
-                if provider_name == 'gemini':
-                    result = await self._execute_gemini_with_tools(full_prompt, tools, conversation_history)
-                elif provider_name == 'openai':
-                    result = await self._execute_openai_with_tools(full_prompt, tools, conversation_history)
-                else:
-                    # Fallback para geração normal
-                    return await self.generate_text(full_prompt)
-                
-                if result['type'] == 'text':
-                    logger.info(f"✅ Resposta final gerada em {iteration} iterações")
-                    return result['content']
-                elif result['type'] == 'tool_call':
-                    # Executa a ferramenta solicitada
-                    tool_name = result['tool_name']
-                    tool_args = result['tool_args']
-                    
-                    if tool_name == 'google_search' and 'query' in tool_args:
-                        search_result = await self.google_search_tool(tool_args['query'])
-                        conversation_history.append({
-                            'type': 'tool_call',
-                            'tool_name': tool_name,
-                            'args': tool_args,
-                            'result': search_result
-                        })
-                        
-                        # Atualiza o contexto com os resultados da busca
-                        search_context = self._format_search_results(search_result)
-                        full_prompt += f"\n\nResultados da busca para '{tool_args['query']}':\n{search_context}"
-                    else:
-                        logger.warning(f"⚠️ Ferramenta {tool_name} não reconhecida ou argumentos inválidos")
-                        break
-                
-            except Exception as e:
-                logger.error(f"❌ Erro na iteração {iteration}: {e}")
-                break
-        
-        logger.warning(f"⚠️ Máximo de iterações atingido ({max_iterations}), retornando resposta parcial")
-        return "Análise realizada com ferramentas, mas processo interrompido por limite de iterações."
+            # Registra sucesso
+            provider['error_count'] = 0
+            
+            logger.info(f"✅ {provider_name} gerou {len(result)} caracteres")
+            return result
+            
+        except Exception as e:
+            # Registra falha
+            provider['error_count'] += 1
+            
+            logger.error(f"❌ Erro no {provider_name}: {e}")
+            
+            # Desabilita provedor se muitos erros
+            if provider['error_count'] >= 3:
+                provider['available'] = False
+                logger.warning(f"⚠️ {provider_name} desabilitado temporariamente")
+                return self.generate_text(prompt, max_tokens, temperature)
+            
+            raise
 
-    async def _execute_gemini_with_tools(self, prompt: str, tools: List[str], history: List[Dict]) -> Dict[str, Any]:
-        """Executa Gemini com suporte a ferramentas"""
+    def _generate_gemini(self, prompt: str, max_tokens: int, temperature: float) -> str:
+        """Gera texto usando Gemini"""
         try:
             model = genai.GenerativeModel('gemini-2.0-flash-exp')
             
-            # Prepara function declarations se google_search está nas tools
-            function_declarations = []
-            if 'google_search' in tools:
-                function_declarations.append(self._get_google_search_function_definition())
+            generation_config = genai.types.GenerationConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+            )
             
-            # Configura ferramentas se disponíveis
-            tool_config = None
-            if function_declarations:
-                tool_config = genai.protos.Tool(function_declarations=function_declarations)
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config
+            )
             
-            # Inicia chat com ferramentas
-            if tool_config:
-                chat = model.start_chat(tools=[tool_config])
-            else:
-                chat = model.start_chat()
-            
-            # Envia mensagem
-            response = chat.send_message(prompt)
-            
-            # Verifica se há function calls
-            if response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    if part.function_call:
-                        function_call = part.function_call
-                        return {
-                            'type': 'tool_call',
-                            'tool_name': function_call.name,
-                            'tool_args': dict(function_call.args)
-                        }
-            
-            # Se não há function calls, retorna o texto
-            return {
-                'type': 'text',
-                'content': response.text
-            }
-            
+            return response.text
         except Exception as e:
-            logger.error(f"❌ Erro no Gemini com ferramentas: {e}")
+            logger.error(f"❌ Erro no Gemini: {e}")
             raise
 
-    async def _execute_openai_with_tools(self, prompt: str, tools: List[str], history: List[Dict]) -> Dict[str, Any]:
-        """Executa OpenAI com suporte a ferramentas"""
+    def _generate_openai(self, prompt: str, max_tokens: int, temperature: float) -> str:
+        """Gera texto usando OpenAI"""
         try:
-            # Prepara tools para OpenAI
-            openai_tools = []
-            if 'google_search' in tools:
-                openai_tools.append({
-                    "type": "function",
-                    "function": self._get_google_search_function_definition()
-                })
+            client = self.providers['openai']['client']
+            response = client.chat.completions.create(
+                model=self.providers['openai']['model'],
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
             
-            messages = [{"role": "user", "content": prompt}]
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"❌ Erro no OpenAI: {e}")
+            raise
+
+    def _generate_groq(self, prompt: str, max_tokens: int, temperature: float) -> str:
+        """Gera texto usando Groq"""
+        try:
+            client = self.providers['groq']['client']
+            response = client.chat.completions.create(
+                model=self.providers['groq']['model'],
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
             
-            # Adiciona histórico se existir
-            for item in history:
-                if item['type'] == 'tool_call':
-                    messages.append({
-                        "role": "assistant",
-                        "tool_calls": [{
-                            "id": f"call_{int(time.time())}",
-                            "type": "function",
-                            "function": {
-                                "name": item['tool_name'],
-                                "arguments": json.dumps(item['args'])
-                            }
-                        }]
-                    })
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": f"call_{int(time.time())}",
-                        "content": json.dumps(item['result'])
-                    })
-            
-            # Faz a chamada
-            if openai_tools:
-                response = openai.ChatCompletion.create(
-                    model="gpt-4-0125-preview",
-                    messages=messages,
-                    tools=openai_tools,
-                    tool_choice="auto"
-                )
-            else:
-                response = openai.ChatCompletion.create(
-                    model="gpt-4-0125-preview",
-                    messages=messages
-                )
-            
-            message = response.choices[0].message
-            
-            # Verifica tool calls
-            if hasattr(message, 'tool_calls') and message.tool_calls:
-                tool_call = message.tool_calls[0]
-                return {
-                    'type': 'tool_call',
-                    'tool_name': tool_call.function.name,
-                    'tool_args': json.loads(tool_call.function.arguments)
-                }
-            
-            return {
-                'type': 'text',
-                'content': message.content
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"❌ Erro no Groq: {e}")
+            raise
+
+    def generate_analysis(self, prompt: str, max_tokens: int = 4000, temperature: float = 0.7) -> str:
+        """Gera análise usando o melhor provedor disponível - método compatível"""
+        try:
+            return self.generate_text(prompt, max_tokens, temperature)
+        except Exception as e:
+            logger.error(f"❌ Erro na geração de análise: {e}")
+            return f"Análise não pôde ser gerada devido a erro técnico: {str(e)}"
+
+    def generate_content(self, prompt: str, max_tokens: int = 4000) -> str:
+        """Método de compatibilidade para generate_content"""
+        return self.generate_analysis(prompt, max_tokens)
+
+    def is_available(self) -> bool:
+        """Verifica se há pelo menos um provedor disponível"""
+        return any(provider['available'] for provider in self.providers.values())
+
+    def get_status(self) -> Dict[str, Any]:
+        """Retorna status dos provedores"""
+        status = {
+            'total_providers': len(self.providers),
+            'available_providers': sum(1 for p in self.providers.values() if p['available']),
+            'providers': {}
+        }
+        
+        for name, provider in self.providers.items():
+            status['providers'][name] = {
+                'available': provider['available'],
+                'model': provider['model'],
+                'error_count': provider['error_count']
             }
+        
+        return status
+
+# Instância global
+ai_manager = AIManager()
+
             
         except Exception as e:
             logger.error(f"❌ Erro no OpenAI com ferramentas: {e}")
