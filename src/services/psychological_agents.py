@@ -28,51 +28,51 @@ class PsychologicalAgentsSystem:
             'anti_objection': AntiObjectionAgent(),
             'pre_pitch_architect': PrePitchArchitectAgent()
         }
-        # Configurações padrão para agentes, caso não sejam encontradas dinamicamente
-        self.agents_config = {
-            'arqueologist': {
-                'role': 'Especialista em escavação de dados profundos',
-                'focus': 'Descobrir padrões ocultos e insights únicos',
-                'methodology': 'Análise arqueológica de 12 camadas'
-            },
-            'visceral_master': {
-                'role': 'Mestre em gatilhos emocionais viscerais',
-                'focus': 'Identificar dores e desejos profundos',
-                'methodology': 'Análise psicológica emocional'
-            },
-            'drivers_architect': {
-                'role': 'Arquiteto de drivers mentais',
-                'focus': 'Criar gatilhos psicológicos de conversão',
-                'methodology': 'Engenharia de persuasão'
-            },
-            'visual_director': {
-                'role': 'Diretor de provas visuais',
-                'focus': 'Desenvolver evidências visuais convincentes',
-                'methodology': 'Design de credibilidade'
-            },
-            'anti_objection': {
-                'role': 'Especialista em neutralização de objeções',
-                'focus': 'Antecipar e neutralizar resistências',
-                'methodology': 'Sistema anti-objeção científico'
-            },
-            'pre_pitch_architect': {
-                'role': 'Arquiteto de pré-vendas',
-                'focus': 'Preparar terreno psicológico para conversão',
-                'methodology': 'Sequenciamento pré-pitch'
-            }
-        }
-
 
         logger.info("Sistema de Agentes Psicológicos inicializado")
 
+    def _clean_data_for_processing(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Remove referências circulares dos dados para processamento seguro"""
+        if not isinstance(data, dict):
+            return data
+
+        cleaned_data = {}
+        for key, value in data.items():
+            try:
+                if isinstance(value, dict):
+                    # Limita a profundidade para evitar referências circulares
+                    cleaned_value = {}
+                    for sub_key, sub_value in value.items():
+                        if isinstance(sub_value, (str, int, float, bool, list)):
+                            cleaned_value[sub_key] = sub_value
+                        elif isinstance(sub_value, dict) and len(str(sub_value)) < 10000:
+                            cleaned_value[sub_key] = str(sub_value)[:1000]
+                        else:
+                            cleaned_value[sub_key] = str(sub_value)[:500]
+                    cleaned_data[key] = cleaned_value
+                elif isinstance(value, list):
+                    cleaned_data[key] = [str(item)[:500] if not isinstance(item, (str, int, float, bool)) else item for item in value[:20]]
+                elif isinstance(value, (str, int, float, bool)):
+                    cleaned_data[key] = value
+                else:
+                    cleaned_data[key] = str(value)[:1000]
+            except Exception as e:
+                logger.warning(f"Erro ao limpar chave {key}: {e}")
+                cleaned_data[key] = str(value)[:500]
+
+        return cleaned_data
+
     def execute_complete_psychological_analysis(
-        self, 
+        self,
         data: Dict[str, Any],
         session_id: str = None
     ) -> Dict[str, Any]:
         """Executa análise psicológica completa com todos os agentes"""
 
         logger.info("🧠 Iniciando análise psicológica completa...")
+
+        # Limpa dados de entrada para evitar referências circulares
+        clean_data = self._clean_data_for_processing(data)
 
         results = {
             'session_id': session_id,
@@ -87,7 +87,8 @@ class PsychologicalAgentsSystem:
             try:
                 logger.info(f"🎭 Executando agente: {agent_name}")
 
-                agent_result = agent.execute_analysis(data, session_id)
+                # Usa dados limpos para cada agente
+                agent_result = agent.execute_analysis(clean_data, session_id)
                 results['agents_results'][agent_name] = agent_result
 
                 # Salva resultado de cada agente
@@ -107,10 +108,13 @@ class PsychologicalAgentsSystem:
         results['consolidated_analysis'] = self._consolidate_psychological_analysis(results['agents_results'])
         results['psychological_metrics'] = self._calculate_psychological_metrics(results['agents_results'])
 
+        # Aplica serialização segura antes de salvar
+        safe_results = self._clean_for_serialization(results)
+        
         # Salva análise consolidada
-        salvar_etapa("analise_psicologica_completa", results, categoria="analise_completa")
+        salvar_etapa("analise_psicologica_completa", safe_results, categoria="analise_completa")
 
-        return results
+        return safe_results
 
     def _consolidate_psychological_analysis(self, agents_results: Dict[str, Any]) -> Dict[str, Any]:
         """Consolida resultados de todos os agentes"""
@@ -185,101 +189,110 @@ class PsychologicalAgentsSystem:
 
         return metrics
 
-class ArchaeologistAgent:
-    """ARQUEÓLOGO MESTRE DA PERSUASÃO"""
-
-    def __init__(self):
-        """Inicializa agente arqueólogo"""
-        self.agent_type = "archaeological_excavator"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
+    def _clean_for_serialization(self, obj, seen=None, depth=0):
+        """Remove referências circulares e limpa objetos para serialização JSON"""
         if seen is None:
             seen = set()
 
-        if current_depth > max_depth:
-            return "[Max depth reached]"
+        if depth > 10:  # Limite de profundidade
+            return f"<Max depth reached: {type(obj).__name__}>"
 
-        if id(obj) in seen:
-            return "[Circular reference detected]"
+        obj_id = id(obj)
+        if obj_id in seen:
+            return f"<Circular reference: {type(obj).__name__}>"
 
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
+        seen.add(obj_id)
 
         try:
             if isinstance(obj, dict):
                 cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
+                for k, v in obj.items():
+                    if isinstance(k, str) and len(k) < 1000:
+                        cleaned[k] = self._clean_for_serialization(v, seen.copy(), depth + 1)
                 return cleaned
-
             elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
+                return [self._clean_for_serialization(item, seen.copy(), depth + 1) for item in obj[:100]]
+            elif isinstance(obj, (str, int, float, bool, type(None))):
+                return obj
+            elif hasattr(obj, '__dict__'):
+                return f"<Object {type(obj).__name__}>"
             else:
-                return str(obj)[:500]
-
+                return str(obj)[:1000]
         except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
+            return f"<Serialization error: {str(e)[:100]}>"
         finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
+            seen.discard(obj_id)
+
+    def _create_emergency_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Cria análise de emergência quando todos os agentes falham"""
+        return {
+            'psychological_analysis': {
+                'emergency_mode': True,
+                'basic_insights': [
+                    'Análise psicológica em modo de emergência',
+                    'Dados básicos processados sem agentes especializados',
+                    'Recomenda-se verificar configurações dos agentes'
+                ]
+            },
+            'agents_executed': [],
+            'total_agents': len(self.agents),
+            'success_rate': '0/6',
+            'status': 'emergency_fallback'
+        }
+
+class ArchaeologistAgent:
+    """ARQUEÓLOGO MESTRE DA PERSUASÃO"""
 
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Executa análise arqueológica em 12 camadas"""
 
-        # Verifica se ai_manager está disponível
-        if not ai_manager:
-            logger.warning("⚠️ AI Manager não disponível, usando fallback estruturado")
-            return self._generate_archaeological_fallback(data)
+        # Extrai informações básicas de forma segura
+        segmento = data.get('segmento', 'negócios') if isinstance(data, dict) else 'negócios'
+        produto = data.get('produto', 'Não informado') if isinstance(data, dict) else 'Não informado'
+        publico = data.get('publico', 'Não informado') if isinstance(data, dict) else 'Não informado'
+        preco = data.get('preco', 'Não informado') if isinstance(data, dict) else 'Não informado'
 
         prompt = f"""
 # VOCÊ É O ARQUEÓLOGO MESTRE DA PERSUASÃO
 
-Analise o mercado de {data.get('segmento', 'negócios')} e retorne JSON estruturado.
+Sua missão é escavar cada detalhe do mercado de {segmento} para encontrar o DNA COMPLETO da conversão. Seja cirúrgico, obsessivo e implacável.
 
-## DADOS DO PROJETO:
-- Segmento: {data.get('segmento', 'Não informado')}
-- Produto: {data.get('produto', 'Não informado')}
-- Público: {data.get('publico', 'Não informado')}
+## DADOS REAIS DO PROJETO:
+- **Segmento**: {segmento}
+- **Produto/Serviço**: {produto}
+- **Público-Alvo**: {publico}
+- **Preço**: R$ {preco}
 
-Retorne análise em formato JSON com:
-- analise_arqueologica
-- camadas_analisadas: 12
-- insights_escavados
-- metricas_forenses
+## DISSECAÇÃO EM 12 CAMADAS PROFUNDAS:
+
+Execute uma análise ULTRA-PROFUNDA seguindo estas camadas:
+
+### CAMADA 1: ABERTURA CIRÚRGICA (Primeiros momentos críticos)
+### CAMADA 2: ARQUITETURA NARRATIVA COMPLETA
+### CAMADA 3: CONSTRUÇÃO DE AUTORIDADE PROGRESSIVA
+### CAMADA 4: GESTÃO DE OBJEÇÕES MICROSCÓPICA
+### CAMADA 5: CONSTRUÇÃO DE DESEJO SISTEMÁTICA
+### CAMADA 6: EDUCAÇÃO ESTRATÉGICA VS REVELAÇÃO
+### CAMADA 7: APRESENTAÇÃO DA OFERTA DETALHADA
+### CAMADA 8: LINGUAGEM E PADRÕES VERBAIS
+### CAMADA 9: GESTÃO DE TEMPO E RITMO
+### CAMADA 10: PONTOS DE MAIOR IMPACTO
+### CAMADA 11: VAZAMENTOS E OTIMIZAÇÕES
+### CAMADA 12: MÉTRICAS FORENSES OBJETIVAS
+
+RETORNE JSON ESTRUTURADO ULTRA-COMPLETO com análise arqueológica detalhada.
 """
 
-        try:
-            response = ai_manager.generate_analysis(prompt, max_tokens=4000)
-            
-            if response and len(response.strip()) > 50:
-                return self._process_archaeological_response(response, data)
-            else:
-                logger.warning("⚠️ Resposta da IA insuficiente, usando fallback")
-                return self._generate_archaeological_fallback(data)
-                
-        except Exception as e:
-            logger.error(f"❌ Erro na análise arqueológica: {e}")
+        response = ai_manager.generate_analysis(prompt)
+
+        if response:
+            return self._process_archaeological_response(response, data)
+        else:
             return self._generate_archaeological_fallback(data)
 
     def _process_archaeological_response(self, response: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Processa resposta arqueológica"""
         try:
-            # Tenta extrair JSON
             if "```json" in response:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
@@ -345,73 +358,31 @@ Retorne análise em formato JSON com:
 class VisceralMasterAgent:
     """MESTRE DA PERSUASÃO VISCERAL"""
 
-    def __init__(self):
-        """Inicializa agente visceral"""
-        self.agent_type = "visceral_master"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
-        if seen is None:
-            seen = set()
-
-        if current_depth > max_depth:
-            return "[Max depth reached]"
-
-        if id(obj) in seen:
-            return "[Circular reference detected]"
-
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
-
-        try:
-            if isinstance(obj, dict):
-                cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
-                return cleaned
-
-            elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
-            else:
-                return str(obj)[:500]
-
-        except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
-        finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
-
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Executa engenharia reversa psicológica profunda"""
+
+        # Extrai informações de forma segura para evitar referências circulares
+        safe_data = {
+            'segmento': data.get('segmento', 'negócios') if isinstance(data, dict) else 'negócios',
+            'produto': data.get('produto', 'Não informado') if isinstance(data, dict) else 'Não informado',
+            'publico': data.get('publico', 'Não informado') if isinstance(data, dict) else 'Não informado',
+            'preco': data.get('preco', 'Não informado') if isinstance(data, dict) else 'Não informado'
+        }
 
         prompt = f"""
 # VOCÊ É O MESTRE DA PERSUASÃO VISCERAL
 
-Linguagem: Direta, brutalmente honesta, carregada de tensão psicológica. 
+Linguagem: Direta, brutalmente honesta, carregada de tensão psicológica.
 Missão: Realizar Engenharia Reversa Psicológica PROFUNDA.
 
 ## DADOS PARA ENGENHARIA REVERSA:
-{json.dumps(data, indent=2, ensure_ascii=False)[:3000]}
+{json.dumps(safe_data, indent=2, ensure_ascii=False)}
 
 ## EXECUTE ENGENHARIA REVERSA PSICOLÓGICA PROFUNDA:
 
 Vá além dos dados superficiais. Mergulhe em:
 - Dores profundas e inconfessáveis
-- Desejos ardentes e proibidos  
+- Desejos ardentes e proibidos
 - Medos paralisantes e irracionais
 - Frustrações diárias (as pequenas mortes)
 - Objeções cínicas reais
@@ -476,7 +447,7 @@ RETORNE JSON com análise visceral completa:
 ```
 """
 
-        response = ai_manager.generate_analysis(prompt, max_tokens=8192)
+        response = ai_manager.generate_analysis(prompt)
 
         if response:
             return self._process_visceral_response(response, data)
@@ -490,22 +461,10 @@ RETORNE JSON com análise visceral completa:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
                 json_text = response[start:end].strip()
-
-                if not json_text:
-                    logger.warning("JSON vazio encontrado na resposta")
-                    return self._extract_visceral_insights(response, data)
-
-                try:
-                    parsed_data = json.loads(json_text)
-                    # Remove any circular references safely
-                    return self._clean_circular_references(parsed_data)
-                except json.JSONDecodeError as je:
-                    logger.error(f"Erro de JSON parsing: {je}")
-                    return self._extract_visceral_insights(response, data)
+                return json.loads(json_text)
             else:
                 return self._extract_visceral_insights(response, data)
-        except Exception as e:
-            logger.error(f"Erro ao processar resposta visceral: {e}")
+        except:
             return self._generate_visceral_fallback(data)
 
     def _extract_visceral_insights(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -547,58 +506,22 @@ RETORNE JSON com análise visceral completa:
             'status': 'visceral_fallback'
         }
 
+    def _execute_agent_visceral_master(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Executa agente visceral master"""
+        try:
+            # Remove referências circulares dos dados antes de processar
+            clean_data = self._clean_data_for_processing(data)
+
+            # Evita importação circular
+            import importlib
+            visceral_module = importlib.import_module('services.visceral_master_agent')
+            return visceral_module.visceral_master.execute_visceral_analysis(clean_data, clean_data, session_id=None)
+        except Exception as e:
+            logger.error(f"❌ Erro no agente visceral_master: {str(e)}")
+            return {'error': str(e), 'agent': 'visceral_master', 'fallback': True}
+
 class DriversArchitectAgent:
     """ARQUITETO DE DRIVERS MENTAIS"""
-
-    def __init__(self):
-        """Inicializa agente de drivers"""
-        self.agent_type = "drivers_architect"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
-        if seen is None:
-            seen = set()
-
-        if current_depth > max_depth:
-            return "[Max depth reached]"
-
-        if id(obj) in seen:
-            return "[Circular reference detected]"
-
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
-
-        try:
-            if isinstance(obj, dict):
-                cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
-                return cleaned
-
-            elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
-            else:
-                return str(obj)[:500]
-
-        except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
-        finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
 
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Cria arsenal completo de drivers mentais"""
@@ -610,7 +533,7 @@ Missão: Criar gatilhos psicológicos que funcionam como âncoras emocionais e r
 
 ## ARSENAL DOS 19 DRIVERS UNIVERSAIS:
 1. DRIVER DA FERIDA EXPOSTA
-2. DRIVER DO TROFÉU SECRETO  
+2. DRIVER DO TROFÉU SECRETO
 3. DRIVER DA INVEJA PRODUTIVA
 4. DRIVER DO RELÓGIO PSICOLÓGICO
 5. DRIVER DA IDENTIDADE APRISIONADA
@@ -686,7 +609,7 @@ RETORNE JSON com drivers customizados completos:
 ```
 """
 
-        response = ai_manager.generate_analysis(prompt, max_tokens=8192)
+        response = ai_manager.generate_analysis(prompt)
 
         if response:
             return self._process_drivers_response(response, data)
@@ -700,21 +623,10 @@ RETORNE JSON com drivers customizados completos:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
                 json_text = response[start:end].strip()
-
-                if not json_text:
-                    logger.warning("JSON vazio encontrado na resposta de drivers")
-                    return self._extract_drivers_from_text(response, data)
-
-                try:
-                    parsed_data = json.loads(json_text)
-                    return self._clean_circular_references(parsed_data)
-                except json.JSONDecodeError as je:
-                    logger.error(f"Erro de JSON parsing em drivers: {je}")
-                    return self._extract_drivers_from_text(response, data)
+                return json.loads(json_text)
             else:
                 return self._extract_drivers_from_text(response, data)
-        except Exception as e:
-            logger.error(f"Erro ao processar resposta drivers: {e}")
+        except:
             return self._generate_drivers_fallback(data)
 
     def _extract_drivers_from_text(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -739,58 +651,28 @@ RETORNE JSON com drivers customizados completos:
         """Gera drivers de fallback"""
         return self._extract_drivers_from_text("", data)
 
+    def _execute_agent_drivers_architect(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Executa agente drivers architect"""
+        try:
+            # Remove referências circulares dos dados antes de processar
+            clean_data = self._clean_data_for_processing(data)
+
+            # Evita importação circular
+            import importlib
+            drivers_module = importlib.import_module('services.mental_drivers_architect')
+            return drivers_module.mental_drivers_architect.generate_custom_drivers(
+                clean_data.get('segmento', ''),
+                clean_data.get('produto', ''),
+                clean_data.get('publico', ''),
+                clean_data.get('web_research', {}),
+                clean_data.get('social_analysis', {})
+            )
+        except Exception as e:
+            logger.error(f"❌ Erro no agente drivers_architect: {str(e)}")
+            return {'error': str(e), 'agent': 'drivers_architect', 'fallback': True}
+
 class VisualDirectorAgent:
     """DIRETOR SUPREMO DE EXPERIÊNCIAS TRANSFORMADORAS"""
-
-    def __init__(self):
-        """Inicializa agente visual"""
-        self.agent_type = "visual_director"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
-        if seen is None:
-            seen = set()
-
-        if current_depth > max_depth:
-            return "[Max depth reached]"
-
-        if id(obj) in seen:
-            return "[Circular reference detected]"
-
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
-
-        try:
-            if isinstance(obj, dict):
-                cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
-                return cleaned
-
-            elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
-            else:
-                return str(obj)[:500]
-
-        except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
-        finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
 
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Cria arsenal completo de PROVIs"""
@@ -826,7 +708,7 @@ PRIORIDADE: [Crítica/Alta/Média]
 🎯 OBJETIVO PSICOLÓGICO
 [Mudança mental específica desejada]
 
-🔬 EXPERIMENTO ESCOLHIDO  
+🔬 EXPERIMENTO ESCOLHIDO
 [Descrição clara da demonstração física]
 
 📐 ANALOGIA PERFEITA
@@ -886,7 +768,7 @@ RETORNE JSON com arsenal completo de PROVIs:
 ```
 """
 
-        response = ai_manager.generate_analysis(prompt, max_tokens=8192)
+        response = ai_manager.generate_analysis(prompt)
 
         if response:
             return self._process_visual_response(response, data)
@@ -900,13 +782,10 @@ RETORNE JSON com arsenal completo de PROVIs:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
                 json_text = response[start:end].strip()
-                parsed_data = json.loads(json_text)
-                # Remove any circular references
-                return self._clean_circular_references(parsed_data)
+                return json.loads(json_text)
             else:
                 return self._extract_visual_insights(response, data)
-        except Exception as e:
-            logger.error(f"Erro ao processar resposta visual: {e}")
+        except:
             return self._generate_visual_fallback(data)
 
     def _extract_visual_insights(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -930,56 +809,6 @@ RETORNE JSON com arsenal completo de PROVIs:
 class AntiObjectionAgent:
     """ESPECIALISTA EM PSICOLOGIA DE VENDAS"""
 
-    def __init__(self):
-        """Inicializa agente anti-objeção"""
-        self.agent_type = "anti_objection"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
-        if seen is None:
-            seen = set()
-
-        if current_depth > max_depth:
-            return "[Max depth reached]"
-
-        if id(obj) in seen:
-            return "[Circular reference detected]"
-
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
-
-        try:
-            if isinstance(obj, dict):
-                cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
-                return cleaned
-
-            elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
-            else:
-                return str(obj)[:500]
-
-        except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
-        finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
-
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Cria sistema anti-objeção completo"""
 
@@ -990,7 +819,7 @@ Missão: Criar ARSENAL PSICOLÓGICO para identificar, antecipar e neutralizar TO
 
 ## AS 3 OBJEÇÕES UNIVERSAIS:
 1. **TEMPO**: "Isso não é prioridade para mim"
-2. **DINHEIRO**: "Minha vida não está tão ruim que precise investir"  
+2. **DINHEIRO**: "Minha vida não está tão ruim que precise investir"
 3. **CONFIANÇA**: "Me dê uma razão para acreditar"
 
 ## AS 5 OBJEÇÕES OCULTAS CRÍTICAS:
@@ -1027,7 +856,7 @@ RETORNE JSON com sistema anti-objeção completo:
     }},
     "dinheiro": {{
       "objecao": "Objeção específica identificada",
-      "raiz_emocional": "Raiz emocional descoberta", 
+      "raiz_emocional": "Raiz emocional descoberta",
       "contra_ataque": "Técnica específica de neutralização",
       "scripts_personalizados": ["Script 1", "Script 2", "Script 3"],
       "drives_mentais": ["Driver 1", "Driver 2"],
@@ -1036,7 +865,7 @@ RETORNE JSON com sistema anti-objeção completo:
     "confianca": {{
       "objecao": "Objeção específica identificada",
       "raiz_emocional": "Raiz emocional descoberta",
-      "contra_ataque": "Técnica específica de neutralização", 
+      "contra_ataque": "Técnica específica de neutralização",
       "scripts_personalizados": ["Script 1", "Script 2", "Script 3"],
       "drives_mentais": ["Driver 1", "Driver 2"],
       "historias_viscerais": ["História 1", "História 2"]
@@ -1071,7 +900,7 @@ RETORNE JSON com sistema anti-objeção completo:
 ```
 """
 
-        response = ai_manager.generate_analysis(prompt, max_tokens=8192)
+        response = ai_manager.generate_analysis(prompt)
 
         if response:
             return self._process_anti_objection_response(response, data)
@@ -1085,13 +914,10 @@ RETORNE JSON com sistema anti-objeção completo:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
                 json_text = response[start:end].strip()
-                parsed_data = json.loads(json_text)
-                # Remove any circular references
-                return self._clean_circular_references(parsed_data)
+                return json.loads(json_text)
             else:
                 return self._extract_anti_objection_insights(response, data)
-        except Exception as e:
-            logger.error(f"Erro ao processar resposta anti-objeção: {e}")
+        except:
             return self._generate_anti_objection_fallback(data)
 
     def _extract_anti_objection_insights(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -1114,56 +940,6 @@ RETORNE JSON com sistema anti-objeção completo:
 
 class PrePitchArchitectAgent:
     """MESTRE DO PRÉ-PITCH INVISÍVEL"""
-
-    def __init__(self):
-        """Inicializa agente pré-pitch"""
-        self.agent_type = "pre_pitch_architect"
-
-    def _clean_circular_references(self, obj, seen=None, max_depth=5, current_depth=0):
-        """Remove referências circulares de forma robusta"""
-        if seen is None:
-            seen = set()
-
-        if current_depth > max_depth:
-            return "[Max depth reached]"
-
-        if id(obj) in seen:
-            return "[Circular reference detected]"
-
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            return obj
-
-        seen.add(id(obj))
-
-        try:
-            if isinstance(obj, dict):
-                cleaned = {}
-                for key, value in obj.items():
-                    try:
-                        if key in ['circular_ref', 'parent', 'root', '_internal']:
-                            continue
-                        cleaned[key] = self._clean_circular_references(value, seen.copy(), max_depth, current_depth + 1)
-                    except Exception as e:
-                        cleaned[key] = f"[Error: {str(e)[:50]}]"
-                return cleaned
-
-            elif isinstance(obj, (list, tuple)):
-                cleaned = []
-                for item in obj[:20]:
-                    try:
-                        cleaned.append(self._clean_circular_references(item, seen.copy(), max_depth, current_depth + 1))
-                    except Exception as e:
-                        cleaned.append(f"[Error: {str(e)[:50]}]")
-                return cleaned
-
-            else:
-                return str(obj)[:500]
-
-        except Exception as e:
-            return f"[Processing error: {str(e)[:100]}]"
-        finally:
-            if id(obj) in seen:
-                seen.remove(id(obj))
 
     def execute_analysis(self, data: Dict[str, Any], session_id: str = None) -> Dict[str, Any]:
         """Cria orquestração psicológica completa"""
@@ -1221,7 +997,7 @@ RETORNE JSON com orquestração completa:
       "transicao": "Como conectar com próxima fase"
     }},
     "desenvolvimento": {{
-      "tempo": "8-12 minutos", 
+      "tempo": "8-12 minutos",
       "script": "Roteiro detalhado do desenvolvimento",
       "escalada_emocional": "Como aumentar intensidade",
       "momentos_criticos": ["Momento 1", "Momento 2"]
@@ -1249,7 +1025,7 @@ RETORNE JSON com orquestração completa:
 ```
 """
 
-        response = ai_manager.generate_analysis(prompt, max_tokens=8192)
+        response = ai_manager.generate_analysis(prompt)
 
         if response:
             return self._process_pre_pitch_response(response, data)
@@ -1263,13 +1039,10 @@ RETORNE JSON com orquestração completa:
                 start = response.find("```json") + 7
                 end = response.rfind("```")
                 json_text = response[start:end].strip()
-                parsed_data = json.loads(json_text)
-                # Remove any circular references
-                return self._clean_circular_references(parsed_data)
+                return json.loads(json_text)
             else:
                 return self._extract_pre_pitch_insights(response, data)
-        except Exception as e:
-            logger.error(f"Erro ao processar resposta pre-pitch: {e}")
+        except:
             return self._generate_pre_pitch_fallback(data)
 
     def _extract_pre_pitch_insights(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:

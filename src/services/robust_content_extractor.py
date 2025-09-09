@@ -70,7 +70,6 @@ class RobustContentExtractor:
     """Extrator de conteúdo multicamadas e robusto com suporte aprimorado a PDF"""
 
     def __init__(self):
-        """Inicializa o extrator robusto"""
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -162,7 +161,7 @@ class RobustContentExtractor:
                             return content
 
                 # Fallback para outros extratores de PDF
-                content = self._extract_pdf_content(url) # Utiliza a nova função para extração de PDF
+                content = self._extract_pdf_content(url)
                 if content and self._validate_content(content, url):
                     # Salva extração de PDF bem-sucedida
                     salvar_etapa("extracao_pdf", {
@@ -402,66 +401,6 @@ class RobustContentExtractor:
         except Exception as e:
             logger.error(f"Erro PyMuPDF: {e}")
             return None
-            
-    def extract_pdf_content(self, file_path: str) -> str:
-        """Extrai conteúdo de PDF com PyMuPDF como principal"""
-        try:
-            # 1. PYMUPDF COMO PRINCIPAL
-            if HAS_PYMUPDF:
-                try:
-                    import fitz  # PyMuPDF
-                    doc = fitz.open(file_path)
-                    content = ""
-                    for page_num in range(doc.page_count):
-                        page = doc[page_num]
-                        content += page.get_text()
-                    doc.close()
-
-                    if len(content.strip()) > 100:
-                        logger.info(f"✅ PyMuPDF extraiu {len(content)} caracteres")
-                        return content
-                except Exception as e:
-                    logger.warning(f"⚠️ PyMuPDF falhou: {e}")
-
-            # 2. FALLBACK: PyPDF2
-            if HAS_PYPDF2:
-                try:
-                    import PyPDF2
-                    with open(file_path, 'rb') as file:
-                        reader = PyPDF2.PdfReader(file)
-                        content = ""
-                        for page in reader.pages:
-                            content += page.extract_text()
-
-                    if len(content.strip()) > 100:
-                        logger.info(f"✅ PyPDF2 extraiu {len(content)} caracteres")
-                        return content
-                except Exception as e:
-                    logger.warning(f"⚠️ PyPDF2 falhou: {e}")
-
-            # 3. FALLBACK: pdfplumber
-            if HAS_PDFPLUMBER:
-                try:
-                    import pdfplumber
-                    content = ""
-                    with pdfplumber.open(file_path) as pdf:
-                        for page in pdf.pages:
-                            page_text = page.extract_text()
-                            if page_text:
-                                content += page_text
-
-                    if len(content.strip()) > 100:
-                        logger.info(f"✅ pdfplumber extraiu {len(content)} caracteres")
-                        return content
-                except Exception as e:
-                    logger.warning(f"⚠️ pdfplumber falhou: {e}")
-
-            logger.error("❌ Todos os extratores de PDF falharam")
-            return ""
-
-        except Exception as e:
-            logger.error(f"❌ Erro crítico na extração de PDF: {e}")
-            return ""
 
     def _is_dynamic_page(self, html: str) -> bool:
         """Verifica se é página dinâmica (JavaScript-heavy)"""

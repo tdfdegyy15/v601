@@ -1,424 +1,233 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 ARQV30 Enhanced v2.0 - Visual Proofs Generator
-Gerador de Provas Visuais Instantâneas
+Sistema Completo de Geração de Provas Visuais Devastadoras
 """
 
-import time
-import random
 import logging
 import json
+import re
 from typing import Dict, List, Any, Optional
+from datetime import datetime
 from services.ai_manager import ai_manager
 from services.auto_save_manager import salvar_etapa, salvar_erro
 
 logger = logging.getLogger(__name__)
 
 class VisualProofsGenerator:
-    """Gerador de Provas Visuais Instantâneas"""
+    """Gerador de Provas Visuais Devastadoras"""
 
-    def __init__(self):
-        """Inicializa o gerador de provas visuais"""
-        logger.info("Visual Proofs Generator inicializado")
+    def __init__(self, ai_manager_instance=None):
+        """Inicializa o gerador"""
+        self.logger = logging.getLogger(__name__)
+        self.ai_manager = ai_manager_instance or ai_manager
 
-    def generate_comprehensive_proofs(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        segmento = data.get('segmento', '')
-        produto = data.get('produto', '')
-        """Gera provas visuais abrangentes para o segmento"""
+    def generate_comprehensive_proofs(self, concepts, avatar_data, context_data) -> Dict[str, Any]:
+        """Gera provas visuais compreensivas"""
         try:
-            logger.info(f"🎭 Gerando provas visuais para {segmento} - {produto}")
-
-            from services.ai_manager import ai_manager
-
-            prompt = f"""
-Crie 3 provas visuais (PROVIs) poderosas para o segmento "{segmento}" com produto "{produto}".
-
-Para cada PROVI, forneça:
-1. Nome impactante
-2. Conceito-alvo que vai provar
-3. Categoria (Destruidora de Objeção, Criadora de Urgência, Instaladora de Crença)
-4. Experimento/demonstração específica
-5. Analogia perfeita
-6. Roteiro completo de execução
-7. Materiais necessários
-
-Formato JSON:
-{{
-    "provis": [
-        {{
-            "nome": "PROVI 1: Nome Impactante",
-            "conceito_alvo": "O que vai provar",
-            "categoria": "Tipo de prova",
-            "prioridade": "Crítica/Alta/Média",
-            "objetivo_psicologico": "Efeito na mente",
-            "experimento": "Demonstração específica",
-            "analogia_perfeita": "Assim como...",
-            "roteiro_completo": {{
-                "setup": "Como preparar",
-                "execucao": "Como executar",
-                "climax": "Momento de maior impacto",
-                "bridge": "Como conectar ao produto"
-            }},
-            "materiais": ["item1", "item2"],
-            "variacoes": {{
-                "online": "Versão online",
-                "grande_publico": "Para muitas pessoas",
-                "intimista": "Para grupos pequenos"
-            }},
-            "plano_b": "O que fazer se der errado"
-        }}
-    ]
-}}
-"""
-
-            response = ai_manager.generate_content(prompt, max_tokens=3000)
-            if response:
-                import json
+            self.logger.info(f"🎯 Gerando provas visuais para {len(concepts)} conceitos")
+            
+            proofs_arsenal = []
+            
+            for i, concept in enumerate(concepts[:10]):  # Limita a 10 conceitos
                 try:
-                    provis_data = json.loads(response)
-                    return provis_data.get('provis', [])
-                except:
-                    return self._create_fallback_provis(segmento, produto)
-            else:
-                return self._create_fallback_provis(segmento, produto)
-
-        except Exception as e:
-            logger.error(f"❌ Erro ao gerar provas visuais: {e}")
-            return self._create_fallback_provis(segmento, produto)
-
-    def _create_fallback_provis(self, segmento, produto):
-        """Cria PROVIs de fallback quando IA falha"""
-        return [
-            {
-                "nome": f"PROVI 1: Demonstração {produto}",
-                "conceito_alvo": f"Provar que {produto} realmente funciona",
-                "categoria": "Destruidora de Objeção",
-                "prioridade": "Crítica",
-                "objetivo_psicologico": f"Quebrar ceticismo sobre {produto}",
-                "experimento": f"Demonstração prática de {produto}",
-                "analogia_perfeita": f"Assim como você pode ver {produto} funcionando, você pode ter os mesmos resultados",
-                "roteiro_completo": {
-                    "setup": f"Prepare exemplo de {produto}",
-                    "execucao": f"Mostre {produto} em ação",
-                    "climax": "Revele o resultado final",
-                    "bridge": f"Conecte ao potencial da audiência com {produto}"
-                },
-                "materiais": [f"Exemplo de {produto}", "Material de demonstração"],
-                "variacoes": {
-                    "online": "Versão digital da demonstração",
-                    "grande_publico": "Demonstração ampliada",
-                    "intimista": "Demonstração personalizada"
-                },
-                "plano_b": "Ter exemplo backup preparado"
-            }
-        ]
-
-
-    def _load_proof_types(self) -> Dict[str, Dict[str, Any]]:
-        """Carrega tipos de provas visuais"""
-        return {
-            'antes_depois': {
-                'nome': 'Transformação Antes/Depois',
-                'objetivo': 'Mostrar transformação clara e mensurável',
-                'impacto': 'Alto',
-                'facilidade': 'Média'
-            },
-            'comparacao_competitiva': {
-                'nome': 'Comparação vs Concorrência',
-                'objetivo': 'Demonstrar superioridade clara',
-                'impacto': 'Alto',
-                'facilidade': 'Alta'
-            },
-            'timeline_resultados': {
-                'nome': 'Timeline de Resultados',
-                'objetivo': 'Mostrar progressão temporal',
-                'impacto': 'Médio',
-                'facilidade': 'Alta'
-            },
-            'social_proof_visual': {
-                'nome': 'Prova Social Visual',
-                'objetivo': 'Validação através de terceiros',
-                'impacto': 'Alto',
-                'facilidade': 'Média'
-            },
-            'demonstracao_processo': {
-                'nome': 'Demonstração do Processo',
-                'objetivo': 'Mostrar como funciona na prática',
-                'impacto': 'Médio',
-                'facilidade': 'Baixa'
-            }
-        }
-
-    def _load_visual_elements(self) -> Dict[str, List[str]]:
-        """Carrega elementos visuais disponíveis"""
-        return {
-            'graficos': ['Barras', 'Linhas', 'Pizza', 'Área', 'Dispersão'],
-            'comparacoes': ['Lado a lado', 'Sobreposição', 'Timeline', 'Tabela'],
-            'depoimentos': ['Vídeo', 'Texto', 'Áudio', 'Screenshot'],
-            'demonstracoes': ['Screencast', 'Fotos', 'Infográfico', 'Animação'],
-            'dados': ['Números', 'Percentuais', 'Valores', 'Métricas']
-        }
-
-    def generate_complete_proofs_system(
-        self, 
-        concepts_to_prove: List[str], 
-        avatar_data: Dict[str, Any], 
-        context_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        """Gera sistema completo de provas visuais"""
-
-        # Validação crítica de entrada
-        if not concepts_to_prove:
-            logger.error("❌ Nenhum conceito para provar")
-            raise ValueError("PROVAS VISUAIS FALHARAM: Nenhum conceito fornecido")
-
-        if not context_data.get('segmento'):
-            logger.error("❌ Segmento não informado")
-            raise ValueError("PROVAS VISUAIS FALHARAM: Segmento obrigatório")
-
-        try:
-            logger.info(f"🎭 Gerando provas visuais para {len(concepts_to_prove)} conceitos")
-
-            # Salva dados de entrada imediatamente
-            salvar_etapa("provas_entrada", {
-                "concepts_to_prove": concepts_to_prove,
-                "avatar_data": avatar_data,
-                "context_data": context_data
-            }, categoria="provas_visuais")
-
-            # Seleciona conceitos mais importantes
-            priority_concepts = self._prioritize_concepts(concepts_to_prove, avatar_data)
-
-            # Gera provas visuais para cada conceito
-            visual_proofs = []
-
-            for i, concept in enumerate(priority_concepts[:8]):  # Máximo 8 provas
-                try:
-                    proof = self._generate_visual_proof_for_concept(concept, avatar_data, context_data, i+1)
+                    proof = self._create_visual_proof(concept, avatar_data, context_data, i + 1)
                     if proof:
-                        visual_proofs.append(proof)
-                        # Salva cada prova gerada
-                        salvar_etapa(f"prova_{i+1}", proof, categoria="provas_visuais")
+                        proofs_arsenal.append(proof)
+                        salvar_etapa(f"prova_visual_{i+1}", proof, categoria="provas_visuais")
+                        
                 except Exception as e:
-                    logger.error(f"❌ Erro ao gerar prova para conceito '{concept}': {e}")
+                    self.logger.error(f"❌ Erro ao criar prova {i+1}: {e}")
                     continue
-
-            if not visual_proofs:
-                logger.error("❌ Nenhuma prova visual gerada")
-                # Usa provas padrão em vez de falhar
-                logger.warning("🔄 Usando provas visuais padrão")
-                visual_proofs = self._get_default_visual_proofs(context_data)
-
-            # Salva provas visuais finais
-            salvar_etapa("provas_finais", visual_proofs, categoria="provas_visuais")
-
-            logger.info(f"✅ {len(visual_proofs)} provas visuais geradas com sucesso")
-            return visual_proofs
-
+            
+            return {
+                'provas_visuais_arsenal': proofs_arsenal,
+                'total_proofs': len(proofs_arsenal),
+                'concepts_processed': len(concepts),
+                'metadata': {
+                    'generated_at': datetime.now().isoformat(),
+                    'success_rate': f"{len(proofs_arsenal)}/{len(concepts[:10])}"
+                }
+            }
+            
         except Exception as e:
-            logger.error(f"❌ Erro ao gerar provas visuais: {str(e)}")
-            salvar_erro("provas_sistema", e, contexto={"segmento": context_data.get('segmento')})
+            self.logger.error(f"❌ Erro na geração de provas visuais: {e}")
+            salvar_erro("visual_proofs_generation", str(e))
+            return self._generate_emergency_proofs(concepts, avatar_data)
 
-            # Fallback para provas básicas
-            logger.warning("🔄 Gerando provas visuais básicas como fallback...")
-            return self._get_default_visual_proofs(context_data)
+    def _create_visual_proof(self, concept: str, avatar_data: Dict[str, Any], context_data: Dict[str, Any], proof_number: int) -> Dict[str, Any]:
+        """Cria uma prova visual individual"""
+        
+        prompt = f"""
+# VOCÊ É O DIRETOR SUPREMO DE EXPERIÊNCIAS TRANSFORMADORAS
 
-    def _prioritize_concepts(self, concepts: List[str], avatar_data: Dict[str, Any]) -> List[str]:
-        """Prioriza conceitos baseado no avatar"""
+Crie uma PROVI (Prova Visual Instantânea) devastadoramente eficaz para o conceito: "{concept}"
 
-        # Dores têm prioridade alta
-        dores = avatar_data.get('dores_viscerais', [])
-        desejos = avatar_data.get('desejos_secretos', [])
+## CONTEXTO:
+- **Conceito Alvo**: {concept}
+- **Número da PROVI**: {proof_number}
+- **Segmento**: {context_data.get('segmento', 'negócios')}
 
-        prioritized = []
+## AVATAR ALVO:
+- **Principais Dores**: {self._safe_get_list(avatar_data, 'dores_viscerais', ['Dor não identificada'])[:3]}
+- **Desejos Principais**: {self._safe_get_list(avatar_data, 'desejos_secretos', ['Desejo não identificado'])[:3]}
 
-        # Adiciona dores primeiro
-        for concept in concepts:
-            if any(concept.lower() in dor.lower() for dor in dores):
-                prioritized.append(concept)
+## INSTRUÇÕES:
+Crie uma PROVI que demonstre visualmente este conceito de forma IRREFUTÁVEL.
 
-        # Adiciona desejos
-        for concept in concepts:
-            if concept not in prioritized and any(concept.lower() in desejo.lower() for desejo in desejos):
-                prioritized.append(concept)
+🎯 FÓRMULA DA PROVI:
+1. **SETUP** (30s): Preparação que cria expectativa
+2. **EXECUÇÃO** (60-90s): Demonstração com tensão crescente  
+3. **CLÍMAX** (15s): Momento exato do "AHA!"
+4. **BRIDGE** (30s): Conexão direta com a vida do avatar
 
-        # Adiciona conceitos restantes
-        for concept in concepts:
-            if concept not in prioritized:
-                prioritized.append(concept)
-
-        return prioritized
-
-    def _generate_visual_proof_for_concept(
-        self, 
-        concept: str, 
-        avatar_data: Dict[str, Any], 
-        context_data: Dict[str, Any],
-        proof_number: int
-    ) -> Optional[Dict[str, Any]]:
-        """Gera prova visual para um conceito específico"""
-
-        try:
-            segmento = context_data.get('segmento', 'negócios')
-
-            # Seleciona tipo de prova mais adequado
-            proof_type = self._select_best_proof_type(concept, avatar_data)
-
-            # Gera prova usando IA
-            prompt = f"""
-Crie uma prova visual específica para o conceito: "{concept}"
-
-SEGMENTO: {segmento}
-TIPO DE PROVA: {proof_type['nome']}
-OBJETIVO: {proof_type['objetivo']}
-
-RETORNE APENAS JSON VÁLIDO:
+RETORNE JSON:
 
 ```json
 {{
-  "nome": "PROVI {proof_number}: Nome específico da prova",
+  "nome": "PROVI {proof_number}: Nome Impactante",
   "conceito_alvo": "{concept}",
-  "tipo_prova": "{proof_type['nome']}",
-  "experimento": "Descrição detalhada do experimento visual",
-  "materiais": [
-    "Material 1 específico",
-    "Material 2 específico",
-    "Material 3 específico"
-  ],
+  "categoria": "Destruidora/Criadora/Instaladora/Prova",
+  "prioridade": "Crítica/Alta/Média",
+  "objetivo_psicologico": "Mudança mental específica desejada",
+  "experimento": "Descrição detalhada do experimento físico",
+  "analogia_perfeita": "Assim como X acontece, você Y",
   "roteiro_completo": {{
-    "preparacao": "Como preparar a prova",
-    "execucao": "Como executar a demonstração",
-    "impacto_esperado": "Qual reação esperar"
+    "setup": "Preparação (30s)",
+    "execucao": "Demonstração (60-90s)",
+    "climax": "Momento AHA! (15s)",
+    "bridge": "Conexão com vida (30s)"
   }},
-  "metricas_sucesso": [
-    "Métrica 1 de sucesso",
-    "Métrica 2 de sucesso"
-  ]
+  "materiais": ["Material 1", "Material 2"],
+  "variacoes": {{
+    "online": "Adaptação para câmera",
+    "grande_publico": "Versão amplificada",
+    "intimista": "Versão simplificada"
+  }},
+  "plano_b": "Alternativa se falhar",
+  "frases_impacto": {{
+    "abertura": "Frase de abertura",
+    "durante": "Frase durante tensão",
+    "revelacao": "Frase no momento AHA",
+    "ancoragem": "Frase que fica na memória"
+  }}
 }}
+```
 """
 
-            response = ai_manager.generate_analysis(prompt, max_tokens=800)
-
+        try:
+            response = self.ai_manager.generate_analysis(prompt)
             if response:
-                clean_response = response.strip()
-                if "```json" in clean_response:
-                    start = clean_response.find("```json") + 7
-                    end = clean_response.rfind("```")
-                    clean_response = clean_response[start:end].strip()
-
-                try:
-                    proof = json.loads(clean_response)
-                    logger.info(f"✅ Prova visual {proof_number} gerada com IA")
-                    return proof
-                except json.JSONDecodeError:
-                    logger.warning(f"⚠️ IA retornou JSON inválido para prova {proof_number}")
-
-            # Fallback para prova básica
-            return self._create_basic_proof(concept, proof_type, proof_number, context_data)
-
+                return self._process_proof_response(response, concept, proof_number)
+            else:
+                return self._generate_fallback_proof(concept, proof_number)
+                
         except Exception as e:
-            logger.error(f"❌ Erro ao gerar prova visual: {str(e)}")
-            return self._create_basic_proof(concept, proof_type, proof_number, context_data)
+            self.logger.error(f"❌ Erro ao gerar prova {proof_number}: {e}")
+            return self._generate_fallback_proof(concept, proof_number)
 
-    def _select_best_proof_type(self, concept: str, avatar_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Seleciona melhor tipo de prova para o conceito"""
+    def _process_proof_response(self, response: str, concept: str, proof_number: int) -> Dict[str, Any]:
+        """Processa resposta da IA para extrair JSON"""
+        try:
+            # Tenta extrair JSON da resposta
+            if "```json" in response:
+                start = response.find("```json") + 7
+                end = response.rfind("```")
+                if end > start:
+                    json_text = response[start:end].strip()
+                    proof_data = json.loads(json_text)
+                    return proof_data
+            
+            # Fallback: tenta encontrar JSON em qualquer lugar
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                json_text = json_match.group(0)
+                proof_data = json.loads(json_text)
+                return proof_data
+                
+            # Se não conseguir extrair, cria estrutura básica
+            return self._generate_fallback_proof(concept, proof_number)
+            
+        except json.JSONDecodeError as e:
+            self.logger.error(f"❌ Erro ao parsear JSON da prova {proof_number}: {e}")
+            return self._generate_fallback_proof(concept, proof_number)
+        except Exception as e:
+            self.logger.error(f"❌ Erro ao processar resposta da prova {proof_number}: {e}")
+            return self._generate_fallback_proof(concept, proof_number)
 
-        concept_lower = concept.lower()
-
-        # Mapeia conceitos para tipos de prova
-        if any(word in concept_lower for word in ['resultado', 'crescimento', 'melhoria']):
-            return self.proof_types['antes_depois']
-        elif any(word in concept_lower for word in ['concorrente', 'melhor', 'superior']):
-            return self.proof_types['comparacao_competitiva']
-        elif any(word in concept_lower for word in ['tempo', 'rapidez', 'velocidade']):
-            return self.proof_types['timeline_resultados']
-        elif any(word in concept_lower for word in ['outros', 'clientes', 'pessoas']):
-            return self.proof_types['social_proof_visual']
-        else:
-            return self.proof_types['demonstracao_processo']
-
-    def _create_basic_proof(
-        self, 
-        concept: str, 
-        proof_type: Dict[str, Any], 
-        proof_number: int, 
-        context_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Cria prova visual básica"""
-
-        segmento = context_data.get('segmento', 'negócios')
-
+    def _generate_fallback_proof(self, concept: str, proof_number: int) -> Dict[str, Any]:
+        """Gera prova de fallback quando a IA falha"""
         return {
-            'nome': f'PROVI {proof_number}: {proof_type["nome"]} para {segmento}',
+            'nome': f'PROVI {proof_number}: {concept[:30]}...',
             'conceito_alvo': concept,
-            'tipo_prova': proof_type['nome'],
-            'experimento': f'Demonstração visual do conceito "{concept}" através de {proof_type["nome"].lower()} específica para {segmento}',
-            'materiais': [
-                'Gráficos comparativos',
-                'Dados numéricos',
-                'Screenshots de resultados',
-                'Depoimentos visuais'
-            ],
+            'categoria': 'Prova de Conceito',
+            'prioridade': 'Alta',
+            'objetivo_psicologico': f'Demonstrar a importância de {concept}',
+            'experimento': f'Demonstração visual para provar {concept}',
+            'analogia_perfeita': f'Assim como este experimento mostra, {concept} é fundamental',
             'roteiro_completo': {
-                'preparacao': f'Prepare materiais visuais que demonstrem {concept} no contexto de {segmento}',
-                'execucao': f'Apresente a prova visual de forma clara e impactante',
-                'impacto_esperado': 'Redução de ceticismo e aumento de confiança'
+                'setup': 'Preparação da demonstração',
+                'execucao': 'Execução do experimento',
+                'climax': 'Revelação do resultado',
+                'bridge': 'Aplicação na vida real'
             },
-            'metricas_sucesso': [
-                'Redução de objeções relacionadas ao conceito',
-                'Aumento de interesse e engajamento',
-                'Aceleração do processo de decisão'
-            ],
-            'fallback_mode': True
+            'materiais': ['Materiais básicos', 'Equipamento simples'],
+            'variacoes': {
+                'online': 'Versão adaptada para vídeo',
+                'grande_publico': 'Versão para auditório',
+                'intimista': 'Versão para grupo pequeno'
+            },
+            'plano_b': 'Explicação verbal caso experimento falhe',
+            'frases_impacto': {
+                'abertura': f'Vamos provar que {concept} é real',
+                'durante': 'Observe o que acontece...',
+                'revelacao': 'Voilà! A prova está aqui!',
+                'ancoragem': f'{concept} é inegável'
+            },
+            'fallback': True,
+            'generated_at': datetime.now().isoformat()
         }
 
-    def _get_default_visual_proofs(self, context_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Retorna provas visuais padrão como fallback"""
+    def _safe_get_list(self, data, key, default):
+        """Safely get list data from dict"""
+        try:
+            if not isinstance(data, dict):
+                return default
+            value = data.get(key, default)
+            if isinstance(value, list):
+                return value
+            return default
+        except Exception:
+            return default
 
-        segmento = context_data.get('segmento', 'negócios')
-
-        return [
-            {
-                'nome': f'PROVI 1: Resultados Comprovados em {segmento}',
-                'conceito_alvo': f'Eficácia da metodologia em {segmento}',
-                'tipo_prova': 'Antes/Depois',
-                'experimento': f'Comparação visual de resultados antes e depois da aplicação da metodologia em {segmento}',
-                'materiais': ['Gráficos de crescimento', 'Dados de performance', 'Screenshots de métricas'],
-                'roteiro_completo': {
-                    'preparacao': 'Organize dados de clientes que aplicaram a metodologia',
-                    'execucao': 'Mostre transformação clara com números específicos',
-                    'impacto_esperado': 'Convencimento através de evidência visual'
-                },
-                'metricas_sucesso': ['Redução de ceticismo', 'Aumento de interesse']
-            },
-            {
-                'nome': f'PROVI 2: Comparação com Mercado em {segmento}',
-                'conceito_alvo': f'Superioridade da abordagem em {segmento}',
-                'tipo_prova': 'Comparação Competitiva',
-                'experimento': f'Comparação visual entre abordagem tradicional e metodologia específica para {segmento}',
-                'materiais': ['Tabelas comparativas', 'Gráficos de performance', 'Benchmarks do setor'],
-                'roteiro_completo': {
-                    'preparacao': 'Colete dados de mercado e benchmarks',
-                    'execucao': 'Apresente comparação lado a lado',
-                    'impacto_esperado': 'Demonstração clara de vantagem competitiva'
-                },
-                'metricas_sucesso': ['Compreensão do diferencial', 'Justificativa de preço premium']
-            },
-            {
-                'nome': f'PROVI 3: Depoimentos Visuais {segmento}',
-                'conceito_alvo': f'Validação social no {segmento}',
-                'tipo_prova': 'Prova Social Visual',
-                'experimento': f'Compilação visual de depoimentos de profissionais de {segmento}',
-                'materiais': ['Vídeos de depoimento', 'Screenshots de resultados', 'Fotos de clientes'],
-                'roteiro_completo': {
-                    'preparacao': 'Selecione melhores depoimentos com resultados',
-                    'execucao': 'Apresente sequência de validações sociais',
-                    'impacto_esperado': 'Redução de risco percebido'
-                },
-                'metricas_sucesso': ['Aumento de confiança', 'Redução de objeções']
+    def _generate_emergency_proofs(self, concepts, avatar_data) -> Dict[str, Any]:
+        """Gera provas de emergência quando tudo falha"""
+        emergency_proofs = []
+        
+        for i, concept in enumerate(concepts[:5]):
+            emergency_proof = {
+                'nome': f'PROVI EMERGÊNCIA {i+1}: {concept[:20]}',
+                'conceito_alvo': concept,
+                'categoria': 'Emergência',
+                'prioridade': 'Crítica',
+                'status': 'emergency_generation',
+                'experimento': f'Demonstração básica de {concept}',
+                'objetivo': 'Manter funcionamento do sistema'
             }
-        ]
+            emergency_proofs.append(emergency_proof)
+        
+        return {
+            'provas_visuais_arsenal': emergency_proofs,
+            'total_proofs': len(emergency_proofs),
+            'status': 'emergency_mode',
+            'metadata': {
+                'generated_at': datetime.now().isoformat(),
+                'mode': 'emergency',
+                'reason': 'AI generation failed'
+            }
+        }
 
 # Instância global
 visual_proofs_generator = VisualProofsGenerator()

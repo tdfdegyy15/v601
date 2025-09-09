@@ -12,18 +12,17 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 from services.ai_manager import ai_manager
 from services.auto_save_manager import salvar_etapa, salvar_erro
-import random
 
 logger = logging.getLogger(__name__)
 
 class VisceralMasterAgent:
     """MESTRE DA PERSUASÃO VISCERAL - Engenharia Reversa Psicológica"""
-
+    
     def __init__(self):
         """Inicializa o Mestre da Persuasão Visceral"""
         self.psychological_layers = [
             'feridas_abertas_inconfessaveis',
-            'sonhos_proibidos_ardentes',
+            'sonhos_proibidos_ardentes', 
             'demonios_internos_paralisantes',
             'correntes_cotidiano',
             'dialeto_alma',
@@ -31,19 +30,19 @@ class VisceralMasterAgent:
             'visoes_paraiso_inferno',
             'segmentacao_psicologica'
         ]
-
+        
         logger.info("🧠 MESTRE DA PERSUASÃO VISCERAL inicializado")
-
+    
     def execute_visceral_analysis(
-        self,
+        self, 
         data: Dict[str, Any],
         research_data: Dict[str, Any] = None,
         session_id: str = None
     ) -> Dict[str, Any]:
         """Executa engenharia reversa psicológica profunda"""
-
+        
         logger.info("🧠 INICIANDO ENGENHARIA REVERSA PSICOLÓGICA PROFUNDA")
-
+        
         try:
             # Salva início da análise visceral
             salvar_etapa("visceral_iniciada", {
@@ -51,61 +50,58 @@ class VisceralMasterAgent:
                 "research_data": research_data,
                 "layers": self.psychological_layers
             }, categoria="analise_completa")
-
+            
             # Constrói prompt visceral ultra-detalhado
             visceral_prompt = self._build_visceral_prompt(data, research_data)
-
+            
             # Executa análise visceral com IA
             response = ai_manager.generate_analysis(visceral_prompt, max_tokens=8192)
-
+            
             if not response:
                 raise Exception("MESTRE VISCERAL FALHOU: IA não respondeu")
-
+            
             # Processa resposta visceral
             visceral_analysis = self._process_visceral_response(response, data)
-
+            
             # Executa segmentação psicológica avançada
             psychological_segmentation = self._execute_psychological_segmentation(visceral_analysis, data)
             visceral_analysis['segmentacao_psicologica_avancada'] = psychological_segmentation
-
+            
             # Gera arsenal tático de persuasão
             tactical_arsenal = self._generate_tactical_arsenal(visceral_analysis, data)
             visceral_analysis['arsenal_tatico_persuasao'] = tactical_arsenal
-
+            
             # Salva análise visceral completa
             salvar_etapa("visceral_completa", visceral_analysis, categoria="analise_completa")
-
+            
             logger.info("✅ ENGENHARIA REVERSA PSICOLÓGICA CONCLUÍDA - ALMA MAPEADA")
             return visceral_analysis
-
+            
         except Exception as e:
             logger.error(f"❌ FALHA CRÍTICA na análise visceral: {e}")
             salvar_erro("visceral_falha", e, contexto=data)
             return self._generate_visceral_emergency(data)
-
+    
     def _build_visceral_prompt(self, data: Dict[str, Any], research_data: Dict[str, Any] = None) -> str:
         """Constrói prompt visceral ultra-detalhado"""
-
-        segmento = data.get('segmento', 'negócios')
-        produto = data.get('produto', 'Produto/Serviço')
-
+        
         research_context = ""
         if research_data and research_data.get('extracted_content'):
             research_context = "\n## CONTEXTO DE PESQUISA REAL:\n"
             for i, content in enumerate(research_data['extracted_content'][:5], 1):
                 research_context += f"FONTE {i}: {content.get('title', 'Sem título')}\n"
                 research_context += f"Conteúdo: {content.get('content', '')[:1000]}\n\n"
-
+        
         prompt = f"""
 # VOCÊ É O MESTRE DA PERSUASÃO VISCERAL
 
-Linguagem: Direta, brutalmente honesta, carregada de tensão psicológica.
+Linguagem: Direta, brutalmente honesta, carregada de tensão psicológica. 
 Não tem medo de chocar, confrontar ou usar metáforas sombrias.
 Objetivo: Forçar clareza e ação imediata através da verdade nua e crua.
 
 ## DADOS PARA ENGENHARIA REVERSA PSICOLÓGICA:
-- **Segmento**: {segmento}
-- **Produto/Serviço**: {produto}
+- **Segmento**: {data.get('segmento', 'Não informado')}
+- **Produto/Serviço**: {data.get('produto', 'Não informado')}
 - **Público-Alvo**: {data.get('publico', 'Não informado')}
 - **Preço**: R$ {data.get('preco', 'Não informado')}
 - **Dados Adicionais**: {data.get('dados_adicionais', 'Não informado')}
@@ -141,23 +137,23 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
       "nivel_escolaridade_aparente": "Baseado em vocabulário e estrutura",
       "recursos_financeiros_inferidos": "Sinais de capacidade financeira"
     }},
-
+    
     "feridas_abertas_inconfessaveis": [
       "Lista de 20-25 dores secretas, viscerais e profundas que não admitem nem para si mesmos"
     ],
-
+    
     "sonhos_proibidos_ardentes": [
       "Lista de 20-25 desejos secretos, ardentes e proibidos que têm vergonha de admitir"
     ],
-
+    
     "demonios_internos_paralisantes": [
       "Lista de 15-20 medos paralisantes, irracionais e que os congelam de terror"
     ],
-
+    
     "correntes_cotidiano_pequenas_mortes": [
       "Lista de 15-20 frustrações diárias, pequenas mortes que os matam por dentro"
     ],
-
+    
     "dialeto_alma_linguagem_interna": {{
       "frases_tipicas_dores": ["Frases exatas que usam para descrever dores"],
       "frases_tipicas_desejos": ["Frases exatas que usam para desejos"],
@@ -168,11 +164,11 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
       "fontes_informacao_desprezadas": ["Quem desprezam ou desconfiam"],
       "linguagem_formal_vs_informal": "Como falam formalmente vs informalmente"
     }},
-
+    
     "muralhas_desconfianca_objecoes": [
       "Lista de 15-20 objeções reais, cínicas e brutalmente honestas"
     ],
-
+    
     "visoes_paraiso_inferno": {{
       "dia_perfeito_pos_transformacao": "Narrativa detalhada do dia ideal após solução",
       "pesadelo_recorrente_sem_solucao": "Narrativa detalhada do pior cenário sem solução",
@@ -180,7 +176,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
       "vida_5_anos_sem_mudanca": "Como será a vida em 5 anos sem mudança",
       "vida_5_anos_com_transformacao": "Como será a vida em 5 anos com transformação"
     }},
-
+    
     "jornada_emocional_completa": {{
       "consciencia_dor": "Como realmente toma consciência da dor",
       "negacao_inicial": "Como nega ou minimiza o problema",
@@ -193,7 +189,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
       "implementacao": "Como lida com implementação",
       "resultados": "Como reage aos primeiros resultados"
     }},
-
+    
     "arquetipos_dominantes": [
       {{
         "nome_arquetipo": "Nome do arquétipo identificado",
@@ -205,7 +201,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
       }}
     ]
   }},
-
+  
   "engenharia_reversa_insights": {{
     "padroes_comportamentais": ["Padrão 1", "Padrão 2"],
     "contradições_identificadas": ["Contradição 1", "Contradição 2"],
@@ -214,7 +210,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
     "momentos_vulnerabilidade": ["Momento 1", "Momento 2"],
     "gatilhos_decisao": ["Gatilho 1", "Gatilho 2"]
   }},
-
+  
   "mapeamento_emocional_profundo": {{
     "temperatura_emocional_dominante": "Otimista/Pessimista/Ansioso/Desesperado",
     "nivel_vulnerabilidade": "Alto/Médio/Baixo - se abriram ou ficaram superficiais",
@@ -224,7 +220,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
     "urgencia_percebida": "Sinais de desespero vs conformismo",
     "historico_tentativas": "Tentativas anteriores mencionadas e frustrações"
   }},
-
+  
   "arsenal_tatico_visceral": {{
     "angulos_copy_devastadores": [
       "Ângulo 1: Foco na dor mais profunda",
@@ -235,7 +231,7 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
     ],
     "tipos_conteudo_magnetico": [
       "Confissões brutalmente honestas",
-      "Cases de transformação extrema",
+      "Cases de transformação extrema", 
       "Diagnósticos dolorosos mas precisos",
       "Revelações chocantes do mercado",
       "Métodos contraintuitivos"
@@ -259,27 +255,27 @@ RETORNE JSON ESTRUTURADO ULTRA-COMPLETO:
 }}
 ```
 
-CRÍTICO: Seja brutalmente honesto. Vá fundo na psique. Não tenha medo de chocar ou confrontar.
+CRÍTICO: Seja brutalmente honesto. Vá fundo na psique. Não tenha medo de chocar ou confrontar. 
 O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
 """
-
+        
         return prompt
-
+    
     def _process_visceral_response(self, response: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Processa resposta visceral com extração profunda"""
-
+        
         try:
             # Extrai JSON da resposta
             clean_text = response.strip()
-
+            
             if "```json" in clean_text:
                 start = clean_text.find("```json") + 7
                 end = clean_text.rfind("```")
                 clean_text = clean_text[start:end].strip()
-
+            
             # Parseia JSON
             visceral_data = json.loads(clean_text)
-
+            
             # Adiciona metadados viscerais
             visceral_data['metadata_visceral'] = {
                 'generated_at': datetime.now().isoformat(),
@@ -288,40 +284,18 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
                 'engenharia_reversa_completa': True,
                 'alma_mapeada': True
             }
-
-            # Correção específica para nomes próprios no avatar
-            if 'avatar_visceral_ultra' in visceral_data:
-                avatar_data = visceral_data['avatar_visceral_ultra']
-                # Gera nome próprio real baseado no segmento e gênero
-                nomes_femininos = ["Ana Silva", "Maria Santos", "Carla Oliveira", "Julia Costa", "Patricia Lima",
-                                  "Fernanda Alves", "Beatriz Souza", "Camila Rodrigues", "Daniela Ferreira", "Roberta Martins",
-                                  "Mariana Pereira", "Aline Ribeiro", "Gabriela Nascimento", "Leticia Cardoso", "Vanessa Torres"]
-                nomes_masculinos = ["Carlos Silva", "João Santos", "Pedro Oliveira", "Rafael Costa", "Bruno Lima",
-                                  "Diego Alves", "Marcos Souza", "Lucas Rodrigues", "Felipe Ferreira", "Ricardo Martins",
-                                  "André Pereira", "Gustavo Ribeiro", "Henrique Nascimento", "Thiago Cardoso", "Leonardo Torres"]
-
-                if avatar_data.get('genero', 'feminino').lower() == 'masculino':
-                    nome_ficticio = random.choice(nomes_masculinos)
-                else:
-                    nome_ficticio = random.choice(nomes_femininos)
-                avatar_data['nome_ficticio'] = nome_ficticio
-
+            
             return visceral_data
-
+            
         except json.JSONDecodeError as e:
             logger.error(f"❌ Erro ao parsear JSON visceral: {e}")
             return self._extract_visceral_insights_from_text(response, data)
-        except Exception as e:
-            logger.error(f"❌ Falha ao processar resposta visceral: {e}")
-            # NÃO retorna fallbacks - usa dados reais ou falha
-            raise Exception(f"Falha na criação do avatar: {e}")
-
-
+    
     def _extract_visceral_insights_from_text(self, text: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Extrai insights viscerais do texto quando JSON falha"""
-
+        
         segmento = data.get('segmento', 'negócios')
-
+        
         # Análise visceral baseada no texto
         return {
             "avatar_visceral_ultra": {
@@ -376,12 +350,12 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
             "raw_visceral_analysis": text[:3000],
             "extraction_method": "text_analysis_visceral"
         }
-
+    
     def _execute_psychological_segmentation(self, visceral_data: Dict[str, Any], data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Executa segmentação psicológica avançada"""
-
+        
         segmento = data.get('segmento', 'negócios')
-
+        
         # Segmentação baseada nos dados viscerais
         psychological_segments = [
             {
@@ -403,7 +377,7 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
                 "gatilhos_mais_eficazes": ["Autoridade técnica", "Prova matemática", "Método vs sorte"]
             },
             {
-                "nome_segmento": "O Escalador Frustrado",
+                "nome_segmento": "O Escalador Frustrado", 
                 "percentual_estimado": "40%",
                 "caracteristicas_distintas": f"Empreendedores em {segmento} que cresceram mas bateram no teto",
                 "feridas_especificas": [
@@ -422,7 +396,7 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
             },
             {
                 "nome_segmento": "O Visionário Sufocado",
-                "percentual_estimado": "25%",
+                "percentual_estimado": "25%", 
                 "caracteristicas_distintas": f"Líderes em {segmento} com visão grande mas execução travada",
                 "feridas_especificas": [
                     "Tem ideias grandes mas não consegue implementar",
@@ -439,12 +413,12 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
                 "gatilhos_mais_eficazes": ["Ambição expandida", "Troféu secreto", "Mentor salvador"]
             }
         ]
-
+        
         return psychological_segments
-
+    
     def _generate_tactical_arsenal(self, visceral_data: Dict[str, Any], data: Dict[str, Any]) -> Dict[str, Any]:
         """Gera arsenal tático de persuasão visceral"""
-
+        
         return {
             "angulos_copy_devastadores": [
                 "A verdade brutal que ninguém te conta sobre [segmento]",
@@ -475,12 +449,12 @@ O objetivo é criar um dossiê tão preciso que permita "ler a mente" dos leads.
                 "Ou você muda agora ou aceita que vai ficar assim para sempre"
             ]
         }
-
+    
     def _generate_visceral_emergency(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Gera análise visceral de emergência"""
-
+        
         segmento = data.get('segmento', 'negócios')
-
+        
         return {
             "avatar_visceral_ultra": {
                 "nome_ficticio": f"Profissional {segmento} em Negação",

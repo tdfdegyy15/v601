@@ -98,8 +98,6 @@ class ProductionSearchManager:
                     results = self._search_serper(query, max_results)
                 elif provider_name == 'bing':
                     results = self._search_bing(query, max_results)
-                elif provider_name == 'exa': # Adicionado busca Exa
-                    results = self._search_exa(query, max_results)
                 else:
                     continue
 
@@ -305,7 +303,9 @@ class ProductionSearchManager:
             return False
 
         try:
-            test_query = "teste mercado digital Brasil 2024" # Query de teste melhorada
+            if provider_name == 'exa':
+                return self._search_exa(query, max_results)
+            test_query = "teste mercado digital Brasil"
 
             if provider_name == 'google':
                 results = self._search_google(test_query, 3)
@@ -313,8 +313,6 @@ class ProductionSearchManager:
                 results = self._search_serper(test_query, 3)
             elif provider_name == 'bing':
                 results = self._search_bing(test_query, 3)
-            elif provider_name == 'exa': # Teste para Exa
-                results = self._search_exa(test_query, 3)
             else:
                 return False
 
@@ -327,28 +325,21 @@ class ProductionSearchManager:
     def _search_exa(self, query: str, max_results: int) -> List[Dict[str, Any]]:
         """Busca usando Exa Neural Search"""
         try:
-            # Melhora query para mercado brasileiro e aumento de robustez/espectro
+            # Melhora query para mercado brasileiro
             enhanced_query = self._enhance_query_for_brazil(query)
-            enhanced_query += " " + self._get_broad_search_terms() # Adiciona termos amplos
 
             # Domínios brasileiros preferenciais
             include_domains = [
                 "g1.globo.com", "exame.com", "valor.globo.com", "estadao.com.br",
-                "folha.uol.com.br", "canaltech.com.br", "infomoney.com.br", "techtudo.com.br",
-                "adrenaline.com.br", "tecnologia.uol.com.br", "olhardigital.com.br",
-                "computerworld.com.br", "idg.com.br", "canalrural.com.br", "agrobase.com.br",
-                "ruralverde.com.br", "agrolink.com.br", "revistagloborural.globo.com",
-                "dinheirorural.com.br", "campo.aesc.com.br"
+                "folha.uol.com.br", "canaltech.com.br", "infomoney.com.br"
             ]
-            
-            # Aumenta o espectro de datas e usa autoprompt
+
             exa_response = exa_client.search(
                 query=enhanced_query,
                 num_results=max_results,
                 include_domains=include_domains,
-                start_published_date="2022-01-01", # Amplia para 2022
-                end_published_date=time.strftime("%Y-%m-%d"), # Data atual
-                use_autoprompt=True, # Mantém autoprompt
+                start_published_date="2023-01-01",
+                use_autoprompt=True,
                 type="neural"
             )
 
@@ -360,7 +351,7 @@ class ProductionSearchManager:
                 results.append({
                     'title': item.get('title', ''),
                     'url': item.get('url', ''),
-                    'snippet': item.get('text', '')[:500], # Aumenta tamanho do snippet
+                    'snippet': item.get('text', '')[:300],
                     'source': 'exa',
                     'score': item.get('score', 0),
                     'published_date': item.get('publishedDate', ''),
@@ -373,8 +364,6 @@ class ProductionSearchManager:
         except Exception as e:
             if "quota" in str(e).lower() or "limit" in str(e).lower():
                 logger.warning(f"⚠️ Exa atingiu limite: {str(e)}")
-            # Registra erro se Exa falhar
-            self._record_provider_error('exa')
             raise e
 
     def _enhance_query_for_brazil(self, query: str) -> str:
@@ -383,31 +372,14 @@ class ProductionSearchManager:
         query_lower = query.lower()
 
         # Adiciona termos brasileiros se não estiverem presentes
-        if not any(term in query_lower for term in ["brasil", "brasileiro", "br", "brazil"]):
+        if not any(term in query_lower for term in ["brasil", "brasileiro", "br"]):
             enhanced_query += " Brasil"
 
         # Adiciona ano atual se não estiver presente
-        current_year = time.strftime("%Y")
-        if not any(year in query for year in [current_year, str(int(current_year) - 1)]):
-            enhanced_query += f" {current_year}"
+        if not any(year in query for year in ["2024", "2025"]):
+            enhanced_query += " 2024"
 
-        # Remove termos duplicados e ajusta espaçamento
-        return " ".join(dict.fromkeys(enhanced_query.split())).strip()
-
-    def _get_broad_search_terms(self) -> str:
-        """Retorna termos para aumentar o espectro da pesquisa"""
-        return "mercado digital tecnologia inovação investimento finanças economia setor"
-
-    # Métodos para o Relatório de Erros e Acertos (Prioridade 2) e Aumento de Robustez (Prioridade 3)
-    # Serão implementados conforme a necessidade de análise dos logs e relatórios específicos.
-    # A pesquisa de redes sociais e YouTube já está sendo tratada pela busca mais abrangente.
-    # Aumentar o tamanho, robustez e espectro das pesquisas é um objetivo contínuo,
-    # refletido nos aprimoramentos de _search_exa e na inclusão de mais provedores/melhorias.
-
-    # Integração DeepResearchMCP, Relatório e Geração de PDF (Objetivos 4, 5, 6)
-    # Estas funcionalidades requerem mais contexto e detalhes de implementação,
-    # mas a estrutura base para busca e retorno de dados já está presente.
-    # O foco inicial é garantir que as buscas e correções das prioridades 1, 2 e 3 sejam robustas.
+        return enhanced_query.strip()
 
 # Instância global
 production_search_manager = ProductionSearchManager()
