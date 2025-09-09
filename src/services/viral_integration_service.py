@@ -652,8 +652,8 @@ class ViralImageFinder:
                 self._mark_api_failed('rapidapi', current_index)
                 logger.warning(f"❌ RapidAPI #{current_index + 1} falhou: {e}")
                 continue
-        logger.error(f"❌ Todas as APIs RapidAPI falharam")
-        return []
+        logger.warning(f"⚠️ Todas as APIs RapidAPI falharam, continuando com outros provedores")
+        return []  # Retorna lista vazia mas permite que outros provedores continuem
 
     async def _search_youtube_thumbnails(self, query: str) -> List[Dict]:
         """Busca específica por thumbnails do YouTube"""
