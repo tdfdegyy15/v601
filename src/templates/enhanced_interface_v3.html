@@ -599,6 +599,146 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .session-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .session-item.selected {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary-color);
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .session-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .session-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .session-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .session-info {
+            color: var(--text-secondary);
+        }
+        
+        .session-progress {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .progress-steps {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .step-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: var(--text-secondary);
+        }
+        
+        .step-indicator.completed {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+        
+        .step-indicator.pending {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .session-context {
+            grid-column: 1 / -1;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .session-controls {
+            padding: 1rem;
+        }
+        
+        .selected-session-info {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .selected-session-details {
+            color: var(--text-secondary);
+        }
+        
+        .selected-session-details > div {
+            margin-bottom: 0.5rem;
+        }
+        
+        .step-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .step-selector .btn {
+            flex: 1;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        .step-selector .btn.selected {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .step-selector .btn.completed {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .action-buttons .btn {
+            flex: 1;
+        }
+            border-radius: 10px;
             padding: 1rem;
             margin-bottom: 0.5rem;
             cursor: pointer;
@@ -834,7 +974,7 @@
                     <span class="feature-tag">🔥 Conteúdo Viral</span>
                     <span class="feature-tag">🌐 Múltiplos Provedores</span>
                 </div>
-                <button class="step-btn" id="step1Btn" onclick="startStep1()">
+                <button class="step-btn" id="step1Btn" onclick="window.startStep1()">
                     <i class="fas fa-database"></i>
                     <span>Iniciar Coleta Massiva</span>
                 </button>
@@ -853,7 +993,7 @@
                     <span class="feature-tag">✅ Validação Online</span>
                     <span class="feature-tag">📊 Síntese JSON</span>
                 </div>
-                <button class="step-btn" id="step2Btn" onclick="startStep2()" disabled>
+                <button class="step-btn" id="step2Btn" onclick="window.startStep2()" disabled>
                     <i class="fas fa-brain"></i>
                     <span>Iniciar Síntese IA</span>
                 </button>
@@ -872,7 +1012,7 @@
                     <span class="feature-tag">📋 Relatório Final</span>
                     <span class="feature-tag">📄 25+ Páginas</span>
                 </div>
-                <button class="step-btn" id="step3Btn" onclick="startStep3()" disabled>
+                <button class="step-btn" id="step3Btn" onclick="window.startStep3()" disabled>
                     <i class="fas fa-cogs"></i>
                     <span>Gerar Módulos</span>
                 </button>
@@ -1025,10 +1165,12 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/session_manager.js') }}"></script>
     
     <script>
         // Estado global do workflow
         let currentSessionId = null;
+        let selectedStep = null;
         let workflowState = {
             step: 0,
             status: 'idle',
@@ -1061,7 +1203,7 @@
             });
         }
         
-        async function startStep1() {
+        window.startStep1 = async function() {
             try {
                 if (!validateForm()) {
                     showNotification('Por favor, preencha pelo menos o segmento', 'warning');
@@ -1102,7 +1244,7 @@
             }
         }
         
-        async function startStep2() {
+        window.startStep2 = async function() {
             try {
                 if (!currentSessionId) {
                     showNotification('Execute a Etapa 1 primeiro', 'warning');
@@ -1138,7 +1280,7 @@
             }
         }
         
-        async function startStep3() {
+        window.startStep3 = async function() {
             try {
                 if (!currentSessionId) {
                     showNotification('Execute as etapas anteriores primeiro', 'warning');
@@ -1177,7 +1319,7 @@
         // === FUNÇÕES DE GERENCIAMENTO DE SESSÕES ===
         
         let selectedSession = null;
-        let selectedStep = 1;
+
         
         // Função auxiliar para salvar estado da sessão
         async function saveSessionState(sessionId, step, data, context = null) {
