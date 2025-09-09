@@ -38,7 +38,9 @@ class RealViralImageExtractor:
     def __init__(self):
         self.session = None
         self.driver = None
-        self.images_dir = "/workspace/project/v100/viral_images"
+        # Usa o diretório do projeto atual
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.images_dir = os.path.join(project_root, "viral_images")
         self._ensure_directories()
         
     def _ensure_directories(self):
