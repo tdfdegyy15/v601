@@ -3,7 +3,7 @@ console.log('🔧 Session Manager carregado');
 
 // Variáveis globais para gerenciamento de sessões
 let selectedSessionId = null;
-
+let selectedStep = null;
 let availableSessions = [];
 
 // Carrega sessões salvas
@@ -124,13 +124,21 @@ async function selectSession(sessionId) {
             });
             document.querySelector(`[data-session-id="${sessionId}"]`).classList.add('selected');
             
-            window.showNotification(`Sessão selecionada: ${sessionId.substring(0, 8)}...`, 'success');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(`Sessão selecionada: ${sessionId.substring(0, 8)}...`, 'success');
+            } else {
+                console.log(`Sessão selecionada: ${sessionId.substring(0, 8)}...`);
+            }
         } else {
             throw new Error(result.error);
         }
     } catch (error) {
         console.error('Erro ao selecionar sessão:', error);
-        window.showNotification(`Erro ao selecionar sessão: ${error.message}`, 'error');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Erro ao selecionar sessão: ${error.message}`, 'error');
+        } else {
+            console.error(`Erro ao selecionar sessão: ${error.message}`);
+        }
     }
 }
 
@@ -201,13 +209,21 @@ function canContinueFromStep(step, completedSteps) {
 // Seleciona uma etapa
 function selectStep(step) {
     if (!selectedSessionId) {
-        window.showNotification('Selecione uma sessão primeiro', 'warning');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Selecione uma sessão primeiro', 'warning');
+        } else {
+            console.warn('Selecione uma sessão primeiro');
+        }
         return;
     }
     
     const btn = document.querySelector(`[data-step="${step}"]`);
     if (btn && btn.disabled) {
-        window.showNotification(`Etapa ${step} não disponível. Complete as etapas anteriores primeiro.`, 'warning');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Etapa ${step} não disponível. Complete as etapas anteriores primeiro.`, 'warning');
+        } else {
+            console.warn(`Etapa ${step} não disponível. Complete as etapas anteriores primeiro.`);
+        }
         return;
     }
     
@@ -220,13 +236,21 @@ function selectStep(step) {
     // Habilita botão de continuar
     document.getElementById('continueBtn').disabled = false;
     
-    window.showNotification(`Etapa ${step} selecionada`, 'info');
+    if (typeof window.showNotification === 'function') {
+        window.showNotification(`Etapa ${step} selecionada`, 'info');
+    } else {
+        console.log(`Etapa ${step} selecionada`);
+    }
 }
 
 // Continua execução de uma etapa
 async function continueFromStep() {
     if (!selectedSessionId || !selectedStep) {
-        window.showNotification('Selecione uma sessão e etapa primeiro', 'warning');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Selecione uma sessão e etapa primeiro', 'warning');
+        } else {
+            console.warn('Selecione uma sessão e etapa primeiro');
+        }
         return;
     }
     
@@ -258,11 +282,19 @@ async function continueFromStep() {
                 break;
         }
         
-        window.showNotification(`Continuando execução da etapa ${selectedStep}`, 'success');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Continuando execução da etapa ${selectedStep}`, 'success');
+        } else {
+            console.log(`Continuando execução da etapa ${selectedStep}`);
+        }
         
     } catch (error) {
         console.error('Erro ao continuar execução:', error);
-        window.showNotification(`Erro ao continuar: ${error.message}`, 'error');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Erro ao continuar: ${error.message}`, 'error');
+        } else {
+            console.error(`Erro ao continuar: ${error.message}`);
+        }
     }
 }
 
