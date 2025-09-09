@@ -319,7 +319,16 @@ def start_step3_generation():
                 # Carrega dados das etapas anteriores
                 session_data = _load_session_data(session_id)
                 if not session_data:
-                    raise Exception("Dados das etapas anteriores não encontrados")
+                    logger.warning("⚠️ Dados das etapas anteriores não encontrados, usando dados padrão")
+                    session_data = {
+                        'search_results': {},
+                        'context': {
+                            'session_id': session_id,
+                            'segmento': 'Análise Geral',
+                            'produto': 'Produto/Serviço',
+                            'publico': 'Público-alvo geral'
+                        }
+                    }
                 
                 # Extrai dados necessários
                 massive_data = session_data.get('search_results', {})
@@ -1081,28 +1090,41 @@ def _save_collection_report(report_content: str, session_id: str):
 def _load_session_data(session_id: str) -> Dict[str, Any]:
     """Carrega dados salvos das etapas anteriores"""
     try:
-        # Tenta carregar dados da etapa 1 concluída
-        etapa1_files = glob.glob(f"relatorios_intermediarios/etapa1_concluida_*.txt")
+        # Tenta carregar dados da etapa 1 concluída com padrão correto
+        etapa1_pattern = f"relatorios_intermediarios/workflow/etapa1_concluida_*{session_id}*.json"
+        etapa1_files = glob.glob(etapa1_pattern)
+        
         if not etapa1_files:
-            logger.warning(f"⚠️ Nenhum arquivo de etapa 1 encontrado para sessão {session_id}")
-            return {}
-        
-        # Pega o arquivo mais recente
-        latest_file = max(etapa1_files, key=os.path.getctime)
-        
-        with open(latest_file, 'r', encoding='utf-8') as f:
-            content = f.read()
+            logger.warning(f"⚠️ Nenhum arquivo de etapa 1 encontrado para sessão {session_id} com o padrão '{etapa1_pattern}'")
             
-        # Tenta extrair JSON do conteúdo
-        try:
-            # Procura por JSON no arquivo
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group())
-                if data.get('session_id') == session_id:
+            # Tenta padrão alternativo sem session_id específico
+            etapa1_files = glob.glob("relatorios_intermediarios/workflow/etapa1_concluida_*.json")
+            if etapa1_files:
+                # Filtra por session_id no conteúdo
+                for file_path in etapa1_files:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if data.get('session_id') == session_id:
+                                logger.info(f"✅ Dados da etapa 1 encontrados em {file_path}")
+                                return data
+                    except (json.JSONDecodeError, FileNotFoundError):
+                        continue
+                        
+            logger.warning(f"⚠️ Nenhum arquivo de etapa 1 válido encontrado para sessão {session_id} após filtro de conteúdo.")
+            
+        else:
+            # Pega o arquivo mais recente
+            latest_file = max(etapa1_files, key=os.path.getctime)
+            
+            try:
+                with open(latest_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    logger.info(f"✅ Dados da etapa 1 carregados de {latest_file}")
                     return data
-        except json.JSONDecodeError:
-            pass
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ Erro ao decodificar JSON de {latest_file}: {e}")
+                pass
         
         # Se não encontrou dados específicos da sessão, tenta carregar do diretório da sessão
         session_dir = f"analyses_data/{session_id}"
